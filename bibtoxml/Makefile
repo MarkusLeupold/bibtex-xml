@@ -8,6 +8,7 @@ OUTPUTDIR := $(BUILDDIR)
 BINDIR    := $(ROOTDIR)/bin
 BINMAIN   := $(BINDIR)/bibtoxml
 
+.PHONY: build install-dependencies
 
 install-dependencies:
 	cabal update && \
