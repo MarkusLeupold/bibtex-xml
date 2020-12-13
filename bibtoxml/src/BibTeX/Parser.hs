@@ -1,6 +1,3 @@
---{-# LANGUAGE FlexibleInstances #-}
---{-# LANGUAGE MultiParamTypeClasses #-}
-
 module BibTeX.Parser (parse) where
 
 import BibTeX.Types

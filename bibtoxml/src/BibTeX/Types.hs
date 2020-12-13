@@ -1,6 +1,3 @@
---{-# LANGUAGE FlexibleInstances #-}
---{-# LANGUAGE MultiParamTypeClasses #-}
-
 module BibTeX.Types where
 
 import Prelude
