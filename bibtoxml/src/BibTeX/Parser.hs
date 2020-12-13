@@ -5,7 +5,7 @@ import Prelude
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
 import qualified Data.Char as Char
-import Util
+import Data.String.Utils (lstrip)
 
 
 parseEntryType :: String -> (EntryType, String)
