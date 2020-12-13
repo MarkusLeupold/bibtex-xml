@@ -11,9 +11,10 @@ data EntryType = Article | Book | Booklet | Conference | Inbook | Incollection |
                  Proceedings | Techreport | Unpublished | UnknownEntry String
                  deriving Show
 
-data TagType = Address | Author | Booktitle | Chapter | Editor | Institution |
-               Journal | Note | Pages | Publisher | School | Title | Year |
-               UnknownTag String
+data TagType = Address | Author | Booktitle | Chapter | Edition | Editor |
+               Howpublished | Institution | Isbn | Journal | Month | Note |
+               Number | Organization | Pages | Publisher | School | Series |
+               Title | Type | Volume | Year | UnknownTag String
                deriving (Show, Eq, Ord)
 
 data Entry = Entry EntryType String (Map TagType String) deriving Show
