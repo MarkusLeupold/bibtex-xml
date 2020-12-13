@@ -13,6 +13,6 @@ install-dependencies:
 	cabal update && \
 	cabal install xml MissingH
 
-build: $(MAIN) install-dependencies
+build: $(MAIN)
 	cd $(SRCDIR) && \
 	ghc --make -outputdir $(OUTPUTDIR) -odir $(ODIR) -o $(BINMAIN) $(MAIN)
