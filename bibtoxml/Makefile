@@ -1,7 +1,7 @@
 ROOTDIR := $(PWD)
 
 SRCDIR    := $(ROOTDIR)/src
-MAIN      := $(SRCDIR)/bibtoxml.hs
+MAIN      := $(SRCDIR)/Main.hs
 BUILDDIR  := $(ROOTDIR)/build
 ODIR      := $(BUILDDIR)
 OUTPUTDIR := $(BUILDDIR)
