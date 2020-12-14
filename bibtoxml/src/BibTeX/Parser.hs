@@ -13,9 +13,10 @@ parseEntryType s = let (t, r) = span Char.isAlpha s
                        t_lc   = map Char.toLower t
                    in
                    case t_lc of
-                   "" -> error $ "parseEntryType{BibToXml}: Missing entry " ++
-                                 "type. Expecting at least one alphabetic " ++
-                                 "character."
+                   "" -> error_midway
+                             s
+                             $ "parseEntryType{BibToXml}: Missing entry type. "
+                               ++ "Expecting at least one alphabetic character."
                    "article"       -> (Article, r)
                    "book"          -> (Book, r)
                    "booklet"       -> (Booklet, r)
@@ -45,9 +46,12 @@ parseEntryKey s = case lstrip s of
                   c:cs -> if isEntryKeyFirstChar c
                           then let (p, r) = span isEntryKeyLaterChar cs
                                in (c:p, r)
-                          else error $ "parseEntryKey{BibToXml}: found '" ++
-                                       [c] ++ "' when expecting an " ++
-                                       "alphabetic character"
+                          else error_midway
+                                   (c:cs)
+                                   $ "parseEntryKey{BibToXml}: found '"
+                                     ++ [c]
+                                     ++ "' when expecting an alphabetic "
+                                     ++ "character"
 
 
 parseTagType :: String -> (Maybe TagType, String)
@@ -89,8 +93,12 @@ parseTagValue s = case lstrip s of
               ""     -> error $ "parseTagValue{BibToXml}: found end of " ++
                                 "string when expecting the following " ++
                                 "character: '\"'"
-              r1:r'  -> error $ "parseTagValue{BibToXml}: found '" ++ [r1] ++
-                                "' when expecting the following character: '\"'"
+              r1:r'  -> error_midway
+                            r
+                            $ "parseTagValue{BibToXml}: found '"
+                              ++ [r1]
+                              ++ "' when expecting the following character: "
+                              ++ "'\"'"
 
     '{':cs -> let (v, r) = _parseTagValueBraced cs in
               case r of
@@ -98,15 +106,21 @@ parseTagValue s = case lstrip s of
               ""     -> error $ "parseTagValue{BibToXml}: found end of "++
                                 "string when expecting the following " ++
                                 "character: '}'"
-              r1:r'  -> error $ "parseTagValue{BibToXml}: found '" ++ [r1] ++
-                                "' when expecting the following character: '}'"
+              r1:r'  -> error_midway
+                            r
+                            $ "parseTagValue{BibToXml}: found '"
+                              ++ [r1]
+                              ++ "' when expecting the following character: '}'"
 
     c:cs   -> if Char.isDigit c 
               then let (v, r) = span Char.isDigit cs in
                    (c:v, r)
-              else error $ "parseTagValue{BibToXml}: found '" ++ [c] ++
-                           "' when expecting a digit or one of the " ++
-                           "following characters: '\"', '{'"
+              else error_midway
+                       (c:cs)
+                       $ "parseTagValue{BibToXml}: found '"
+                         ++ [c]
+                         ++ "' when expecting a digit or one of the following "
+                         ++ "characters: '\"', '{'"
 
     ""     -> error $ "parseTagValue{BibToXml}: found end of string when " ++
                       "expecting a digit or one of the following " ++
@@ -183,9 +197,12 @@ parseTag s = let (t, r) = parseTagType (lstrip s) in
              Just t' -> case lstrip r of
                         '=':r' -> let (v, r'') = parseTagValue r' in
                                   (Just (t', v), r'')
-                        c:_    -> error $ "parseTag{BibToXml}: found '" ++
-                                          [c] ++ "' when expecting the " ++
-                                          "following character: '='"
+                        c:cs   -> error_midway
+                                      (c:cs)
+                                      $ "parseTag{BibToXml}: found '"
+                                        ++ [c]
+                                        ++ "' when expecting the following "
+                                        ++ "character: '='"
                         ""     -> error $ "parseTag{BibToXml}: found " ++
                                           "end of string when expecting " ++
                                           "the following character: '='"
@@ -213,33 +230,40 @@ parseTags s = let (mtv, r) = parseTag s
                    
 
 parseEntry :: String -> (Entry, String)
-parseEntry s = let (t, s') = parseEntryType s
-                   s''     = lstrip s'
-               in
-               case s'' of
-               '{':cs -> let (k, s) = parseEntryKey cs in
-                         case s of
-                         ',':cs -> let (m, r) = parseTags cs in
-                                   case lstrip r of
-                                   '}':r' -> (Entry t k m, r')
-                                   c:_    -> error $
-                                             "parseEntry{BibToXml}: found '" ++
-                                             [c] ++ "' when expecting the " ++
-                                             "following character: '}'"
-                                   ""     -> error $
-                                             "parseEntry{BibToXml}: found " ++
-                                             "end of string when expecting " ++
-                                             "the following character: '}'"
-                         c:_    -> error $ "parseEntry{BibToXml}: found '" ++
-                                           [c] ++ "' when expecting the " ++
-                                           "following character: ','"
-                         ""     -> error $ "parseEntry{BibToXml}: found end " ++
-                                           "of string when expecting the " ++
-                                           "following character: ','"
-               ""     -> error $ "parseEntry{BibToXml}: found end of string " ++
-                                 "when expecting the following character: '{'"
-               c:_    -> error $ "parseEntry{BibToXml}: found '" ++ [c] ++
-                                 "' when expecting the following character: '{'"
+parseEntry s =
+    let (t, s') = parseEntryType s
+        s''     = lstrip s'
+    in
+    case s'' of
+    '{':cs -> let (k, s) = parseEntryKey cs in
+              case s of
+              ',':cs -> let (m, r) = parseTags cs in
+                        case lstrip r of
+                        '}':r' -> (Entry t k m, r')
+                        c:cs   -> error_midway
+                                      (c:cs)
+                                      $ "parseEntry{BibToXml}: found '"
+                                        ++ [c]
+                                        ++ "' when expecting the following "
+                                        ++ "character: '}'"
+                        ""     -> error $ "parseEntry{BibToXml}: found end of "
+                                          ++ "string when expecting the "
+                                          ++ "following character: '}'"
+              c:cs   -> error_midway
+                            (c:cs)
+                            $ "parseEntry{BibToXml}: found '"
+                              ++ [c]
+                              ++ "' when expecting the following character: ','"
+              ""     -> error $ "parseEntry{BibToXml}: found end " ++
+                                "of string when expecting the " ++
+                                "following character: ','"
+    ""     -> error $ "parseEntry{BibToXml}: found end of string " ++
+                      "when expecting the following character: '{'"
+    c:cs   -> error_midway 
+                  (c:cs)
+                  $ "parseEntry{BibToXml}: found '"
+                    ++ [c]
+                    ++ "' when expecting the following character: '{'"
                    
 
 parse :: String -> Database
@@ -252,4 +276,9 @@ parse s = let s' = lstrip s in
           c:cs   -> error $
                         "parseBibtex{BibToXml}: found '" ++ [c] ++
                         "' when expecting one of the following: '@'"
+
+
+error_midway remaining message = error $ message
+                                         ++ "\nAt:\n"
+                                         ++ (take 50 remaining)
 
