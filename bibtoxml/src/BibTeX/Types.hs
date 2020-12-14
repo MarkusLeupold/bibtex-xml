@@ -17,11 +17,21 @@ data TagType = Address | Author | Booktitle | Chapter | Edition | Editor |
                Title | Type | Volume | Year | UnknownTag String
                deriving (Show, Eq, Ord)
 
-data Entry = Entry EntryType String (Map TagType String) deriving Show
+type EntryKey = String
+type TagValue = String
+type Tags     = Map TagType TagValue
 
-newEntry :: EntryType -> String -> Entry
-newEntry t k = Entry t k Map.empty
+data Entry = Entry { entryType :: EntryType
+                   , entryKey  :: EntryKey
+                   , entryTags :: Tags
+                   } deriving Show
 
-addTag :: TagType -> String -> Entry -> Entry
-addTag k v (Entry n t tags) = Entry n t (Map.insert k v tags)
+emptyEntry :: EntryType -> EntryKey -> Entry
+emptyEntry t k = Entry { entryType = t
+                       , entryKey  = k
+                       , entryTags = Map.empty
+                       }
+
+addTag :: TagType -> TagValue -> Entry -> Entry
+addTag k v e = e { entryTags = Map.insert k v (entryTags e) }
 
