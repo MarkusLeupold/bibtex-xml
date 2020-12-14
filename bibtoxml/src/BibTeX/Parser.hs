@@ -242,13 +242,13 @@ parseEntry s = let (t, s') = parseEntryType s
                                  "' when expecting the following character: '{'"
                    
 
-parse :: String -> ([Entry], String)
+parse :: String -> Database
 parse s = let s' = lstrip s in
           case s' of
-          []     -> ([], "")
+          []     -> []
           '@':cs -> let (e, r) = parseEntry cs
-                        (es, q) = parse r
-                    in  (e:es, q)
+                        es = parse r
+                    in e:es
           c:cs   -> error $
                         "parseBibtex{BibToXml}: found '" ++ [c] ++
                         "' when expecting one of the following: '@'"

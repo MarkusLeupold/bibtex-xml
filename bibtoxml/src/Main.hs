@@ -10,6 +10,6 @@ import Data.List (intercalate)
 main = do putStrLn "Please input the file path of the BibTeX file:"
           file   <- getLine >>= return . strip >>= readFile
           putStr "This is the parsed file:\n\n"
-          (es, _) <- return $ parse file
+          es <- return $ parse file
           putStr $ intercalate "\n" $ map (XML.ppElement . BTXML.toElement) es
           putStr "\n"
