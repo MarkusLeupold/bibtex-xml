@@ -36,7 +36,7 @@ parseEntryType s = let (t, r) = span Char.isAlpha s
 isEntryKeyFirstChar :: Char -> Bool
 isEntryKeyFirstChar = Char.isAlpha
 isEntryKeyLaterChar :: Char -> Bool
-isEntryKeyLaterChar c = Char.isAlphaNum c || elem c ['-',':']
+isEntryKeyLaterChar c = Char.isAlphaNum c || elem c "'-/:_"
 
 parseEntryKey :: String -> (String, String)
 parseEntryKey s = case lstrip s of
@@ -266,8 +266,16 @@ parseEntry s =
                     ++ "' when expecting the following character: '{'"
                    
 
+strip_comments :: String -> String
+strip_comments ""           = ""
+strip_comments ('%':r)      = case dropWhile (/= '\n') r of
+                                  ""   -> ""
+                                  _:r' -> strip_comments r'
+strip_comments ('\\':'%':r) = "\\%" ++ strip_comments r
+strip_comments (c:cs)       = c : strip_comments cs
+
 parse :: String -> Database
-parse s = let s' = lstrip s in
+parse s = let s' = strip_comments $ lstrip s in
           case s' of
           []     -> []
           '@':cs -> let (e, r) = parseEntry cs
