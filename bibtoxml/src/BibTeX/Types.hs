@@ -26,6 +26,8 @@ data Entry = Entry { entryType :: EntryType
                    , entryTags :: Tags
                    } deriving Show
 
+type Database = [Entry]
+
 emptyEntry :: EntryType -> EntryKey -> Entry
 emptyEntry t k = Entry { entryType = t
                        , entryKey  = k
