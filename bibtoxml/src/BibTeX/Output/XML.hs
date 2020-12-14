@@ -85,3 +85,7 @@ instance ToElement BT.Entry where
                    ]
                  , foldr ((:) . XML.Elem . toElement) [] $ Map.toAscList tags
                  )
+
+instance ToElement [BT.Entry] where
+    toElement es = XML.node ( XML.blank_name { XML.qName = "database" } )
+                            ( map toElement es )
