@@ -84,12 +84,12 @@ parseTagType s = let (t, r) = span Char.isAlpha s
                  "year"         -> (Just Year, r)
                  _              -> (Just (UnknownTag t_lc), r)
 
-parseTagValue :: String -> (String, String)
+parseTagValue :: String -> (TagValue, String)
 parseTagValue s = case lstrip s of
 
     '"':cs -> let (v, r) = _parseTagValueQuoted cs in
               case r of
-              '"':r' -> (v, r')
+              '"':r' -> (LiteralValue v, r')
               ""     -> error $ "parseTagValue{BibToXml}: found end of " ++
                                 "string when expecting the following " ++
                                 "character: '\"'"
@@ -102,7 +102,7 @@ parseTagValue s = case lstrip s of
 
     '{':cs -> let (v, r) = _parseTagValueBraced cs in
               case r of
-              '}':r' -> (v, r')
+              '}':r' -> (LiteralValue v, r')
               ""     -> error $ "parseTagValue{BibToXml}: found end of "++
                                 "string when expecting the following " ++
                                 "character: '}'"
@@ -112,9 +112,9 @@ parseTagValue s = case lstrip s of
                               ++ [r1]
                               ++ "' when expecting the following character: '}'"
 
-    c:cs   -> if Char.isDigit c 
+    c:cs   -> if Char.isDigit c
               then let (v, r) = span Char.isDigit cs in
-                   (c:v, r)
+                   (LiteralValue (c:v), r)
               else error_midway
                        (c:cs)
                        $ "parseTagValue{BibToXml}: found '"
@@ -166,7 +166,7 @@ __parseTagValueBraced b ('}':cs)    = let (v, r) = __parseTagValueBraced
                                                    (b-1)
                                                    cs
                                       in ('}':v, r)
-                                      
+
 -- A backslash (i.e. the TeX escape character) introduces a TeX control
 -- sequence. These are not touched by BibTeX, so we aren't allowed to interpret
 -- the following character as a BibTeX control character. In the special case
@@ -184,7 +184,7 @@ __parseTagValueBraced b (c:cs)      = let (v, r) = __parseTagValueBraced b cs
                                       in (c:v, r)
 
 
-parseTag :: String -> (Maybe (TagType, String), String)
+parseTag :: String -> (Maybe (TagType, TagValue), String)
 parseTag s = let (t, r) = parseTagType (lstrip s) in
              case t of
              -- If t is Nothing, there wasn't found any tag type. We assume that
@@ -207,7 +207,7 @@ parseTag s = let (t, r) = parseTagType (lstrip s) in
                                           "end of string when expecting " ++
                                           "the following character: '='"
 
-parseTags :: String -> ((Map TagType String), String)
+parseTags :: String -> (Tags, String)
 parseTags s = let (mtv, r) = parseTag s
                   r'       = lstrip r
               in
@@ -222,14 +222,14 @@ parseTags s = let (mtv, r) = parseTag s
               -- have ended. Evaluate to the empty Map if the current tag (i.e.
               -- mtv) is Nothing or, otherwise, to a Map containing only the
               -- current tag.
-              _      -> ( maybe Map.empty 
+              _      -> ( maybe Map.empty
                                 (\ (t, v) -> Map.insert t v Map.empty)
                                 mtv
                         , r'
                         )
-                   
 
-parseEntry :: String -> (Entry, String)
+
+parseEntry :: String -> (Element, String)
 parseEntry s =
     let (t, s') = parseEntryType s
         s''     = lstrip s'
@@ -259,12 +259,12 @@ parseEntry s =
                                 "following character: ','"
     ""     -> error $ "parseEntry{BibToXml}: found end of string " ++
                       "when expecting the following character: '{'"
-    c:cs   -> error_midway 
+    c:cs   -> error_midway
                   (c:cs)
                   $ "parseEntry{BibToXml}: found '"
                     ++ [c]
                     ++ "' when expecting the following character: '{'"
-                   
+
 
 strip_comments :: String -> String
 strip_comments ""           = ""
@@ -277,10 +277,10 @@ strip_comments (c:cs)       = c : strip_comments cs
 parse :: String -> Database
 parse s = let s' = strip_comments $ lstrip s in
           case s' of
-          []     -> []
+          []     -> emptyDatabase
           '@':cs -> let (e, r) = parseEntry cs
                         es = parse r
-                    in e:es
+                    in pushFront e es
           c:cs   -> error $
                         "parseBibtex{BibToXml}: found '" ++ [c] ++
                         "' when expecting one of the following: '@'"
@@ -289,4 +289,3 @@ parse s = let s' = strip_comments $ lstrip s in
 error_midway remaining message = error $ message
                                          ++ "\nAt:\n"
                                          ++ (take 50 remaining)
-

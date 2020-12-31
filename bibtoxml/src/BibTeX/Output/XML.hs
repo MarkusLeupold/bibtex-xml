@@ -58,20 +58,36 @@ class ToElement t where
     toElement :: t -> XML.Element
 
 
+tagValueToElementList :: BT.TagValue -> [XML.Element]
+tagValueToElementList (BT.LiteralValue s) =
+    [ XML.node ( XML.blank_name { XML.qName = "literalValue" } )
+               ( s )
+    ]
+tagValueToElementList (BT.ReferencedValue s) =
+    [ XML.node ( XML.blank_name { XML.qName = "referencedValue" } )
+               ( XML.Attr { XML.attrKey = XML.blank_name { XML.qName = "ref" }
+                          , XML.attrVal = s
+                          }
+               )
+    ]
+tagValueToElementList (BT.ComposedValue v1 v2) =
+    (tagValueToElementList v1) ++ (tagValueToElementList v2)
+
 instance ToElement (BT.TagType, BT.TagValue) where
     toElement (t, v) =
         XML.node ( XML.blank_name { XML.qName = "tag" } )
-                 ( XML.Attr { XML.attrKey = XML.blank_name
-                                                { XML.qName = "type" }
-                            , XML.attrVal = toString t
-                            }
-                 , toString v
+                 ( [ XML.Attr { XML.attrKey = XML.blank_name
+                                                  { XML.qName = "type" }
+                              , XML.attrVal = toString t
+                              }
+                   ]
+                 , tagValueToElementList v
                  )
-                 
-instance ToElement BT.Entry where
+
+instance ToElement BT.Element where
     toElement BT.Entry { BT.entryType = t
                        , BT.entryKey  = k
-                       , BT.entryTags = tags 
+                       , BT.entryTags = tags
                        } =
         XML.node ( XML.blank_name { XML.qName = "entry" } )
                  ( [ XML.Attr { XML.attrKey = XML.blank_name
@@ -86,6 +102,6 @@ instance ToElement BT.Entry where
                  , foldr ((:) . XML.Elem . toElement) [] $ Map.toAscList tags
                  )
 
-instance ToElement [BT.Entry] where
+instance ToElement [BT.Element] where
     toElement es = XML.node ( XML.blank_name { XML.qName = "database" } )
                             ( map toElement es )
