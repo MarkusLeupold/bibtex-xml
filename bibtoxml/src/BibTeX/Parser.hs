@@ -5,7 +5,7 @@ import Prelude
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
 import qualified Data.Char as Char
-import Data.String.Utils (lstrip)
+import Data.String.Utils (lstrip, rstrip)
 
 
 parseEntryType :: String -> (EntryType, String)
@@ -287,24 +287,14 @@ parseEntry s =
                     ++ "' when expecting the following character: '{'"
 
 
-strip_comments :: String -> String
-strip_comments ""           = ""
-strip_comments ('%':r)      = case dropWhile (/= '\n') r of
-                                  ""   -> ""
-                                  _:r' -> strip_comments r'
-strip_comments ('\\':'%':r) = "\\%" ++ strip_comments r
-strip_comments (c:cs)       = c : strip_comments cs
-
 parse :: String -> Database
-parse s = let s' = strip_comments $ lstrip s in
-          case s' of
+parse s = case lstrip s of
           []     -> emptyDatabase
           '@':cs -> let (e, r) = parseEntry cs
                         es = parse r
                     in pushFront e es
-          c:cs   -> error $
-                        "parseBibtex{BibToXml}: found '" ++ [c] ++
-                        "' when expecting one of the following: '@'"
+          s      -> let (s', r) = span (/= '@') s
+                    in pushFront (Comment (rstrip s')) (parse r)
 
 
 error_midway remaining message = error $ message
