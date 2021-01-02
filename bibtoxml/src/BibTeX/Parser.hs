@@ -8,30 +8,42 @@ import qualified Data.Char as Char
 import Data.String.Utils (lstrip, rstrip)
 
 
-parseEntryType :: String -> (EntryType, String)
-parseEntryType s = let (t, r) = span Char.isAlpha s
-                       t_lc   = map Char.toLower t
-                   in
-                   case t_lc of
-                   "" -> error_midway
-                             s
-                             $ "parseEntryType{BibToXml}: Missing entry type. "
-                               ++ "Expecting at least one alphabetic character."
-                   "article"       -> (Article, r)
-                   "book"          -> (Book, r)
-                   "booklet"       -> (Booklet, r)
-                   "conference"    -> (Conference, r)
-                   "inbook"        -> (Inbook, r)
-                   "incollection"  -> (Incollection, r)
-                   "inproceedings" -> (Inproceedings, r)
-                   "manual"        -> (Manual, r)
-                   "masterthesis"  -> (Masterthesis, r)
-                   "misc"          -> (Misc, r)
-                   "phdthesis"     -> (Phdthesis, r)
-                   "proceedings"   -> (Proceedings, r)
-                   "techreport"    -> (Techreport, r)
-                   "unpublished"   -> (Unpublished, r)
-                   _               -> (UnknownEntry t_lc, r)
+stripDelimiter :: Char -> (Bool, Bool) -> String -> String
+stripDelimiter d (l, r) s =
+    let s' = if l then lstrip s else s
+    in if null s' || (head s') /= d
+           then error_midway s' $ "stripDelimiter{BibToXml}: "
+                                  ++ "stripDelimiter _ " ++ show (l,r) ++ " _: "
+                                  ++ "Can't find the delimiter '" ++ [d]
+                                  ++ "' at the beginning of the input stream."
+           else (if r then lstrip . tail else tail) s'
+
+
+parseDataBlockType :: String -> (Either EntryType String, String)
+parseDataBlockType s =
+    let (t, r) = span Char.isAlpha s
+        t_lc   = map Char.toLower t
+    in case t_lc of
+           "" -> error_midway s
+                              $ "parseEntryType{BibToXml}: Missing data block "
+                                ++ "type. Expecting at least one alphabetic "
+                                ++ "character."
+           "article"       -> (Left Article, r)
+           "book"          -> (Left Book, r)
+           "booklet"       -> (Left Booklet, r)
+           "conference"    -> (Left Conference, r)
+           "inbook"        -> (Left Inbook, r)
+           "incollection"  -> (Left Incollection, r)
+           "inproceedings" -> (Left Inproceedings, r)
+           "manual"        -> (Left Manual, r)
+           "masterthesis"  -> (Left Masterthesis, r)
+           "misc"          -> (Left Misc, r)
+           "phdthesis"     -> (Left Phdthesis, r)
+           "proceedings"   -> (Left Proceedings, r)
+           "techreport"    -> (Left Techreport, r)
+           "unpublished"   -> (Left Unpublished, r)
+           "string"        -> (Right "string", r)
+           _               -> (Left (UnknownEntry t_lc), r)
 
 isEntryKeyFirstChar :: Char -> Bool
 isEntryKeyFirstChar = Char.isAlpha
@@ -107,12 +119,12 @@ numberParser = ( \ s -> (not (null s)) && (Char.isDigit (head s))
                , LiteralValue
                )
 
-isReferencedValueChar :: Char -> Bool
-isReferencedValueChar = Char.isAlpha
+isStringNameChar :: Char -> Bool
+isStringNameChar = Char.isAlpha
 
 referenceParser :: TagValueParser
-referenceParser = ( \ s -> (not (null s)) && (isReferencedValueChar (head s))
-                  , span isReferencedValueChar
+referenceParser = ( \ s -> (not (null s)) && (isStringNameChar (head s))
+                  , span isStringNameChar
                   , ReferencedValue
                   )
 
@@ -250,47 +262,41 @@ parseTags s = let (mtv, r) = parseTag s
                         )
 
 
-parseEntry :: String -> (Element, String)
-parseEntry s =
-    let (t, s') = parseEntryType s
-        s''     = lstrip s'
+parseStringDecl :: String -> (StringMap, String)
+parseStringDecl s =
+    let (name, r) = span isStringNameChar (lstrip s)
+    in if null name
+           then (Map.empty, s)
+           else let afterEquals       = stripDelimiter '=' (True,False) r
+                    (val, afterValue) = parseTagValue afterEquals
+                in case lstrip afterValue of
+                       ',':r -> let (m, r') = parseStringDecl r
+                                in (Map.insert name val m, r')
+                       r     -> (Map.singleton name val, r)
+
+
+parseDataBlock :: String -> (Element, String)
+parseDataBlock s =
+    let (t, s')     = parseDataBlockType s
+        afterBrace  = stripDelimiter '{' (True,False) s'
     in
-    case s'' of
-    '{':cs -> let (k, s) = parseEntryKey cs in
-              case s of
-              ',':cs -> let (m, r) = parseTags cs in
-                        case lstrip r of
-                        '}':r' -> (Entry t k m, r')
-                        c:cs   -> error_midway
-                                      (c:cs)
-                                      $ "parseEntry{BibToXml}: found '"
-                                        ++ [c]
-                                        ++ "' when expecting the following "
-                                        ++ "character: '}'"
-                        ""     -> error $ "parseEntry{BibToXml}: found end of "
-                                          ++ "string when expecting the "
-                                          ++ "following character: '}'"
-              c:cs   -> error_midway
-                            (c:cs)
-                            $ "parseEntry{BibToXml}: found '"
-                              ++ [c]
-                              ++ "' when expecting the following character: ','"
-              ""     -> error $ "parseEntry{BibToXml}: found end " ++
-                                "of string when expecting the " ++
-                                "following character: ','"
-    ""     -> error $ "parseEntry{BibToXml}: found end of string " ++
-                      "when expecting the following character: '{'"
-    c:cs   -> error_midway
-                  (c:cs)
-                  $ "parseEntry{BibToXml}: found '"
-                    ++ [c]
-                    ++ "' when expecting the following character: '{'"
+    case t of
+        Left t ->
+            let (key, afterKey)   = parseEntryKey afterBrace
+                afterComma        = stripDelimiter ',' (True,False) afterKey
+                (tags, afterTags) = parseTags afterComma
+                remaining         = stripDelimiter '}' (True,False) afterTags
+            in (Entry t key tags, remaining)
+        Right "string" ->
+            let (m, afterDecl) = parseStringDecl afterBrace
+                remaining      = stripDelimiter '}' (True,False) afterDecl
+            in (StringDecl m, remaining)
 
 
 parse :: String -> Database
 parse s = case lstrip s of
           []     -> emptyDatabase
-          '@':cs -> let (e, r) = parseEntry cs
+          '@':cs -> let (e, r) = parseDataBlock cs
                         es = parse r
                     in pushFront e es
           s      -> let (s', r) = span (/= '@') s
