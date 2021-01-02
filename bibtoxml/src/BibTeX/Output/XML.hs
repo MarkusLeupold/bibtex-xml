@@ -84,6 +84,17 @@ instance ToElement (BT.TagType, BT.TagValue) where
                  , tagValueToElementList v
                  )
 
+instance ToElement (String, BT.TagValue) where
+    toElement (s, v) =
+        XML.node ( XML.blank_name { XML.qName = "string" } )
+                 ( [ XML.Attr { XML.attrKey = XML.blank_name
+                                                  { XML.qName = "name" }
+                              , XML.attrVal = s
+                              }
+                   ]
+                 , tagValueToElementList v
+                 )
+
 instance ToElement BT.Element where
     toElement BT.Entry { BT.entryType = t
                        , BT.entryKey  = k
@@ -104,6 +115,9 @@ instance ToElement BT.Element where
     toElement (BT.Comment s) =
         XML.node ( XML.blank_name { XML.qName = "comment" } )
                  s
+    toElement (BT.StringDecl m) =
+        XML.node ( XML.blank_name { XML.qName = "stringDeclaration"} )
+                 ( map toElement $ Map.toAscList m )
 
 instance ToElement [BT.Element] where
     toElement es = XML.node ( XML.blank_name { XML.qName = "database" } )
