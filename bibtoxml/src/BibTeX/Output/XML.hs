@@ -101,6 +101,9 @@ instance ToElement BT.Element where
                    ]
                  , foldr ((:) . XML.Elem . toElement) [] $ Map.toAscList tags
                  )
+    toElement (BT.Comment s) =
+        XML.node ( XML.blank_name { XML.qName = "comment" } )
+                 s
 
 instance ToElement [BT.Element] where
     toElement es = XML.node ( XML.blank_name { XML.qName = "database" } )
