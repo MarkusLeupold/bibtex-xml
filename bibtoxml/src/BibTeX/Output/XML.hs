@@ -54,71 +54,83 @@ instance ToString BT.TagType where
 
 instance ToString String where toString s = s
 
-class ToElement t where
-    toElement :: t -> XML.Element
+class ToElements t where
+    toElements :: t -> [XML.Element]
 
 
-tagValueToElementList :: BT.TagValue -> [XML.Element]
-tagValueToElementList (BT.LiteralValue s) =
-    [ XML.node ( XML.blank_name { XML.qName = "literalValue" } )
-               ( s )
-    ]
-tagValueToElementList (BT.ReferencedValue s) =
-    [ XML.node ( XML.blank_name { XML.qName = "referencedValue" } )
-               ( XML.Attr { XML.attrKey = XML.blank_name { XML.qName = "ref" }
-                          , XML.attrVal = s
-                          }
-               )
-    ]
-tagValueToElementList (BT.ComposedValue v1 v2) =
-    (tagValueToElementList v1) ++ (tagValueToElementList v2)
-
-instance ToElement (BT.TagType, BT.TagValue) where
-    toElement (t, v) =
-        XML.node ( XML.blank_name { XML.qName = "tag" } )
-                 ( [ XML.Attr { XML.attrKey = XML.blank_name
-                                                  { XML.qName = "type" }
-                              , XML.attrVal = toString t
-                              }
-                   ]
-                 , tagValueToElementList v
-                 )
-
-instance ToElement (String, BT.TagValue) where
-    toElement (s, v) =
-        XML.node ( XML.blank_name { XML.qName = "string" } )
-                 ( [ XML.Attr { XML.attrKey = XML.blank_name
-                                                  { XML.qName = "name" }
+instance ToElements BT.TagValue where
+    toElements (BT.LiteralValue s) =
+        [ XML.node ( XML.blank_name { XML.qName = "literalValue" } )
+                   ( s )
+        ]
+    toElements (BT.ReferencedValue s) =
+        [ XML.node ( XML.blank_name { XML.qName = "referencedValue" } )
+                   ( XML.Attr { XML.attrKey =
+                                    XML.blank_name { XML.qName = "ref" }
                               , XML.attrVal = s
                               }
-                   ]
-                 , tagValueToElementList v
-                 )
+                   )
+        ]
+    toElements (BT.ComposedValue v1 v2) = (toElements v1) ++ (toElements v2)
 
-instance ToElement BT.Element where
-    toElement BT.Entry { BT.entryType = t
-                       , BT.entryKey  = k
-                       , BT.entryTags = tags
-                       } =
-        XML.node ( XML.blank_name { XML.qName = "entry" } )
-                 ( [ XML.Attr { XML.attrKey = XML.blank_name
-                                                  { XML.qName = "id" }
-                              , XML.attrVal = toString k
-                              }
-                   , XML.Attr { XML.attrKey = XML.blank_name
-                                                  { XML.qName = "type" }
-                              , XML.attrVal = toString t
-                              }
-                   ]
-                 , foldr ((:) . XML.Elem . toElement) [] $ Map.toAscList tags
-                 )
-    toElement (BT.Comment s) =
-        XML.node ( XML.blank_name { XML.qName = "comment" } )
-                 s
-    toElement (BT.StringDecl m) =
-        XML.node ( XML.blank_name { XML.qName = "stringDeclaration"} )
-                 ( map toElement $ Map.toAscList m )
+instance ToElements (BT.TagType, BT.TagValue) where
+    toElements (t, v) =
+        [ XML.node ( XML.blank_name { XML.qName = "tag" } )
+                   ( [ XML.Attr { XML.attrKey = XML.blank_name
+                                                    { XML.qName = "type" }
+                                , XML.attrVal = toString t
+                                }
+                     ]
+                   , toElements v
+                   )
+        ]
 
-instance ToElement [BT.Element] where
-    toElement es = XML.node ( XML.blank_name { XML.qName = "database" } )
-                            ( map toElement es )
+instance ToElements [(BT.TagType, BT.TagValue)] where
+    toElements = (>>= (toElements))
+
+instance ToElements (String, BT.TagValue) where
+    toElements (s, v) =
+        [ XML.node ( XML.blank_name { XML.qName = "string" } )
+                  ( [ XML.Attr { XML.attrKey = XML.blank_name
+                                                   { XML.qName = "name" }
+                               , XML.attrVal = s
+                               }
+                    ]
+                  , toElements v
+                  )
+         ]
+
+instance ToElements [(String, BT.TagValue)] where
+    toElements = (>>= (toElements))
+
+instance ToElements BT.Element where
+    toElements BT.Entry { BT.entryType = t
+                        , BT.entryKey  = k
+                        , BT.entryTags = tags
+                        } =
+        [ XML.node ( XML.blank_name { XML.qName = "entry" } )
+                   ( [ XML.Attr { XML.attrKey = XML.blank_name
+                                                    { XML.qName = "id" }
+                                , XML.attrVal = toString k
+                                }
+                     , XML.Attr { XML.attrKey = XML.blank_name
+                                                    { XML.qName = "type" }
+                                , XML.attrVal = toString t
+                                }
+                     ]
+                   , toElements $ Map.toAscList tags
+                   )
+        ]
+    toElements (BT.Comment s) =
+        [ XML.node ( XML.blank_name { XML.qName = "comment" } )
+                   s
+        ]
+    toElements (BT.StringDecl m) = toElements $ Map.toAscList m
+
+instance ToElements [BT.Element] where
+    toElements es = [ XML.node ( XML.blank_name { XML.qName = "database" } )
+                               ( es >>= toElements )
+                    ]
+
+toElement :: [BT.Element] -> XML.Element
+toElement = (\ (x:xs) -> x) . toElements
