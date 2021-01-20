@@ -66,7 +66,7 @@ instance ToElements BT.Value where
     toElements (BT.ReferencedValue s) =
         [ XML.node ( XML.blank_name { XML.qName = "referencedValue" } )
                    ( XML.Attr { XML.attrKey =
-                                    XML.blank_name { XML.qName = "ref" }
+                                    XML.blank_name { XML.qName = "name" }
                               , XML.attrVal = s
                               }
                    )
@@ -75,9 +75,9 @@ instance ToElements BT.Value where
 
 instance ToElements (BT.FieldName, BT.Value) where
     toElements (t, v) =
-        [ XML.node ( XML.blank_name { XML.qName = "tag" } )
+        [ XML.node ( XML.blank_name { XML.qName = "field" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
-                                                    { XML.qName = "type" }
+                                                    { XML.qName = "name" }
                                 , XML.attrVal = toString t
                                 }
                      ]
