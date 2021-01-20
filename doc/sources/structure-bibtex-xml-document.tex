@@ -1,0 +1,99 @@
+\begin{tikzpicture}
+    [ with background
+    , semithick
+    , every node/.style={anchor=base, text depth=0}
+    , node distance=\baselineskip
+    ]
+    \begin{scope}
+        [ tree layout
+        , significant sep=1em
+        , record node names
+        ]
+
+        \node[xml element, dashed] (xml root) {/}
+            child
+              { node[xml element] {BibTeX:database}
+                child
+                  { node[operator] {$*$}
+                    child
+                      { node[operator] {$|$}
+                        child
+                          { node[xml element] {BibTeX:entry}
+                            child {node[xml attribute] {id}}
+                            child {node[xml attribute] {type}}
+                            child
+                              { node[operator] {$*$}
+                                child
+                                  { node [xml element] {BibTeX:field}
+                                    child {node[xml attribute] {name}}
+                                    child {node[production] {valueProd\/}}
+                                  }
+                              }
+                          }
+                        child
+                          { node [xml element] {BibTeX:string}
+                            child {node[xml attribute] {name}}
+                            child {node[production] {valueProd\/}}
+                          }
+                      }
+                  }
+              }
+          ;
+    \end{scope}
+    \node[fit=\recordednodenames, rectangle] (main tree) {};
+
+    \node
+      (valueProd)
+      [ production
+      , matrix
+      , matrix anchor=north
+      , below=of main tree.south
+      , label=
+          { [production,decorate=false,anchor=north west,draw=none]
+            north west:%
+            valueProd:\/
+          }
+      ]
+      { \begin{scope}[tree layout]
+            \node[operator] {$+$}
+                child
+                  { node[operator] {$|$}
+                    child {node[xml element] {BibTeX:literalValue}}
+                    child {node[xml element] {BibTeX:referencedValue}}
+                  }
+              ;
+        \end{scope}
+        \\
+      };
+    \node
+      (symbolKey)
+      [ rectangle
+      , draw
+      , matrix
+      , matrix anchor=north
+      , below=of valueProd.south
+      , column sep=1em
+      , empty/.style={text height=0, inner sep=0, minimum size=2ex}
+      ]
+      { \node[xml element, empty, label={[anchor=west]east:XML-Element}] {};
+      & \node
+          [ production
+          , empty
+          , label=
+              { [anchor=west]
+                east:Produktion (Platzhalter für Baumbestandteil)
+              }
+          ]
+          {}
+          ;
+      \\\node
+          [ xml attribute
+          , empty
+          , label={[anchor=west]east:XML-Attribut}
+          ]
+          {}
+          ;
+      \\\node[operator, empty, label={[anchor=west]east:Operator}] {};
+      \\
+      };
+\end{tikzpicture}

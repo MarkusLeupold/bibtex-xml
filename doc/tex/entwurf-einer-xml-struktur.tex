@@ -1,0 +1,104 @@
+\section[Entwurf einer XML-Struktur]{Entwurf einer XML-Struktur zur Repräsentation einer \mbox{\BibTeX-}Datenbank}
+
+\def\temp{
+    Die Präambel ist speziell für die Verwendung mit \TeX{} gedacht. Da \TeX{}
+    eine turingvollständige Sprache ist, ist die Interpretation entsprechend
+    aufwendig.
+}
+
+Die XML-Struktur zur Darstellung einer \mbox{\BibTeX-}Datenbank (im Folgenden
+\enquote{\BibTeXXML}) soll im Rahmen dieser Arbeit möglichst genau den
+Funktionsumfang des normalen \mbox{\BibTeX-}Formats übernehmen. Neben Einträgen
+sollen deshalb auch Strings unterstützt werden. Präambel-Elemente vernachlässigt
+die XML-Struktur, da deren Interpretation den Rahmen dieser Arbeit sprengen
+würde\footnote{\temp} und dieses Feature wahrscheinlich auch nur sehr selten
+Verwendung findet.
+
+Alle XML-Elemente des \BibTeXXMLformat s gehören dem Namensraum
+\lstinlineXML|BibTeX| mit der URL {\ttfamily \BibTeXXMLnamespace} an.
+\autoref{fig:structure-bibtex-xml-document} gibt einen Überblick über die
+Struktur eines \BibTeXXMLdoc s. In den folgenden Unterabschnitten werden
+ausgewählte \mbox{\BibTeX-}XML-Elemente und Designentscheidungen genauer
+erklärt.
+
+\begin{figure}
+    \centering
+    \input{../sources/structure-bibtex-xml-document.tex}
+    \caption{Struktur eines \mbox{\BibTeX-}XML-Dokuments}
+    \label{fig:structure-bibtex-xml-document}
+\end{figure}
+
+\subsection{Das Datenbankelement}
+
+Das Wurzelelement einer \mbox{\BibTeX}-XML-Datenbank ist ein Element vom Typ
+\mbox{\lstinlineXML|BibTeX:database|.} Dieses enthält -- analog zur Struktur
+einer \mbox{\BibTeX-}Datenbank -- in beliebiger Abfolge Eintrags- und
+String-Elemente. Da \mbox{\BibTeX-}Datenbanken keine Metainformationen besitzen,
+erfordert das \mbox{\lstinlineXML|BibTeX:database|-}Element außer den genannten
+Elementen keine Attribute oder sonstigen Kindelemente.
+
+\subsection{Eintrags-Elemente}
+
+Einträge werden durch den Elementtyp \lstinlineXML|BibTeX:entry| dargestellt.
+Deren Struktur entspricht im Großen und Ganzen den Einträgen in einer normalen
+\mbox{\BibTeX-}Datenbank. Für die einzelnen Felder gibt es den speziellen
+Elementtyp \lstinlineXML|BibTeX:field|, von dem null oder mehr Kindelemente in
+jedem Eintrag vorhanden sein können. Einträge dürfen also theoretisch leer sein,
+wobei das interpretierende Programm dann einen Fehler ausgeben sollte. Diese
+Entscheidung rührt daher, dass auch das \mbox{\file{bibtex}-}Paket in \LaTeX{}
+nicht mit einem Fehler stoppt, wenn Pflichtfelder in einem Eintrag fehlen,
+sondern nur Warnungen ausgibt.
+
+Der Wert eines Felds hat die in \autoref{subsec:feld-und-stringwerte}
+beschriebene Struktur.
+
+\subsection{Stringdefinitionen}
+
+Während in einer \mbox{\BibTeX-}Datenbank Alias-Definitionen immer in
+String-Elemente eingefasst sind, werden in \BibTeXXML{} Aliase einzeln auf
+Datenbanklevel definiert. Ein umgebendes String-Element nach dem Vorbild der
+\mbox{\BibTeX-}Datenbank würde zu den eigentlichen Definitionen keine weiteren
+Informationen ergänzen, sodass eine solche Schachtelung nur die Dokumentstruktur
+unnötigerweise komplizierter machen würde. Jeder Alias wird durch ein Element
+vom Typ \lstinlineXML|BibTeX:string| definiert. Der Wert eines einzelnen Strings
+hat dieselbe Struktur wie der Wert eines Felds -- beschrieben in
+\autoref{subsec:feld-und-stringwerte}.
+
+\subsection{Feld- und Stringwerte}
+\label{subsec:feld-und-stringwerte}
+
+Felder und Strings können zusammengesetzte Werte haben. Jeder Bestandteil eines
+Wertes ist dabei entweder ein literaler Wert oder eine Referenz auf einen
+String. Daher lassen sich Feld- und Stringwerte durch eine beliebige Abfolge
+mindestens eines Elements der folgenden zwei Typen darstellen:
+\begin{description}
+    \item[\ttfamily BibTeX:literalValue:] Ein literaler Wert. Jedes
+        Element dieses Typs besitzt ein Kind vom XML-Typ \lstinlineXML|CDATA|,
+        das exakt der Zeichenkette entspricht, die das Element repräsentiert.
+        Der Wert eines \mbox{\lstinlineXML|BibTeX:literalValue|-}Elements ist
+        damit genau dessen Inhalt.
+    \item[\ttfamily BibTeX:referencedValue:] Eine Referenz auf einen
+        String. Jedes Element dieses Typs ist leer aber besitzt ein
+        \mbox{\lstinlineXML|name|-}Attribut, das den Namen des referenzierten
+        Strings enthält. Der Wert eines
+        \mbox{\lstinlineXML|BibTeX:referencedValue|-}Elements bestimmt sich wie
+        folgt:
+        \begin{enumerate}
+            \item Sei \textit{r} das
+                \mbox{\lstinlineXML|BibTeX:referencedValue|-}Element, dessen
+                Wert bestimmt werden soll.
+            \item Liste alle Elemente des vollständigen Dokumentbaums in
+                Präorder auf. Das Resultat nennen wir die \textit{Liste aller
+                Elemente}. Fakt: Diese Liste enthält \textit{r}.
+            \item Suche in der Liste aller Elemente das letzte
+                \mbox{\lstinlineXML|BibTeX:string|-}Element, das vor \textit{r}
+                steht und dessen \mbox{\lstinlineXML|name|-}Attribut mit dem
+                \mbox{\lstinlineXML|name|-}Attribut von \textit{r}
+                übereinstimmt. Wenn dieses Element existiert, so ist der Wert
+                von \textit{r} der Wert dieses Elements. Ansonsten behandle das
+                Fehlen als einen Fehler (\textit{r} referenziert einen String,
+                der nicht definiert ist).
+        \end{enumerate}
+\end{description}
+Der Wert eines Felds oder Strings bestimmt sich durch Verkettung der Einzelwerte
+seiner Kinder in Reihenfolge der Dokumentordnung.

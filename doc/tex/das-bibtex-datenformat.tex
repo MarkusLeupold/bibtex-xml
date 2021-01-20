@@ -1,0 +1,191 @@
+\section{Das \mbox{\BibTeX-}Datenformat}
+\label{sec:das-bibtex-datenformat}
+
+\BibTeX{} ist ein System zur Beschreibung und Interpretation von
+Quellenverzeichnissen.
+Entwickelt wurde es 1985 von Oren Patashnik und Leslie Lamport für das
+professionelle Textsatzsystem \TeX{} und dessen Makropaket \LaTeX, wird jedoch
+heute auch außerhalb dieser Umgebung genutzt, um Literaturquellen zu
+beschreiben.\cite{wiki:BibTeX}
+
+\medskip
+\noindent\BibTeX{} besteht aus zwei Komponenten:
+\begin{description}
+    \item[Datenbankdateien:] Alle Quellen, auf die sich eine Publikation
+        stützt, werden in einer Datenbank untergebracht. Dabei handelt es sich
+        um eine einfache Textdatei, in der jede Quelle mit ihrem Typ (z.B. Buch
+        oder Zeitschrift) und ihren Eigenschaften (z.B. Autor oder Untertitel)
+        beschrieben wird. Das \mbox{\BibTeX-}Format ist sowohl für Menschen als
+        auch Maschinen gut lesbar.
+    \item[Interpreter:] Datenbankdateien werden von einem Programm eingelesen
+        und analysiert. Abhängig vom Verwendungszweck und den Einstellungen des
+        Programms werden dann bestimmte Informationen aus der Datenbank
+        formatiert in ein Dokument eingefügt. Zum Beispiel kann das
+        \mbox{\LaTeX-}Paket \file{bibtex} ein Literaturverzeichnis erstellen,
+        das lediglich diejenigen Quellen enthält, die auch im Dokument explizit
+        zitiert wurden. Es erzeugt außerdem automatisch nach einem wählbaren
+        Muster Kürzel für die Quellen an den Stellen, an denen sie zitiert
+        werden.
+\end{description}
+
+\subsection{Allgemeines Datenschema einer \mbox{\BibTeX-}Datenbank}
+
+\mbox{\BibTeX-}Datenbanken sind Listen von Datensätzen (vgl.
+\autoref{fig:structure-BibTeXDatabase}). Diese Datensätze (im Folgenden als
+\emph{Elemente} bezeichnet) lassen sich grob in drei Arten unterteilen:
+\begin{itemize}
+    \item Einträge, die die eigentlichen Quellen beschreiben
+    \item String-Elemente, die der Definition von String-Konstanten dienen
+    \item Präambel-Elemente, die zur Ausführung von Code verwendet werden
+\end{itemize}
+Diese Elementarten werden später in diesem Abschnitt noch genauer beschrieben.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[with background]
+    \begin{scope}
+        [ semithick
+        , every node/.style={anchor=base}
+        ]
+        \matrix {
+                           \node[database element] (p)  {Präambel};
+            & \node {,}; & \node[database element] (s1) {String};
+            & \node {,}; & \node[database element] (e1) {Eintrag};
+            & \node {,}; & \node[database element] (e2) {Eintrag};
+            & \node {,}; & \node[database element] (s2) {String};
+            & \node {,}; & \node[database element] (e3) {Eintrag};
+            & \node {,}; & \node {\dots};
+            \\
+        };
+        \graph[use existing nodes] {
+            e1 ->[bend right] s1;
+            e2 ->[bend left] s1;
+            e1 ->[bend left] e3;
+        };
+    \end{scope}
+    \end{tikzpicture}
+    \caption{Struktur einer \mbox{\BibTeX-}Datenbank}
+    \label{fig:structure-BibTeXDatabase}
+\end{figure}
+
+Manche Elemente einer \mbox{\BibTeX-}Datenbank können andere referenzieren.
+Für eine korrekte Interpretation muss das \mbox{\BibTeX-}Programm die
+betroffenen Elemente in einer bestimmten Reihenfolge aus der Datenbank lesen.
+\mbox{\BibTeX-}Datenbanken besitzen in ihrer abstrakten Datenstruktur daher eine
+Ordnung.
+
+\subsubsection{Einträge}
+
+Ein Eintrag beschreibt genau eine Quelle. Zwar darf andersherum theoretisch
+dieselbe Quelle von mehreren Einträgen beschrieben werden, dies hätte aber keinen Mehrwert. Hingegen ist es gängige Praxis, dass mehrere Einträge unterschiedliche Quellen aus
+\emph{derselben Publikation} beschreiben -- also zum Beispiel verschiedene
+Abschnitte eines einzigen Fachbuchs.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[with background]
+    \begin{scope}
+        [ tree layout
+        , grow=down
+        , semithick
+        , every node/.style={anchor=base}
+        ]
+        \node[database element] {Eintrag}
+            child {node {Typ}}
+            child {node {ID}}
+            child {node {Felder}};
+    \end{scope}
+    \end{tikzpicture}
+    \caption{Struktur eines Eintrags}
+    \label{fig:structure-entry}
+\end{figure}
+
+Jeder Eintrag besitzt die folgenden drei Eigenschaften (vgl.
+\autoref{fig:structure-entry}):
+
+\begin{description}
+    \item[Typ:] Die Art der Quelle, also z.B. \enquote{Buch}, \enquote{Artikel}
+        oder \enquote{Tagungsband}.
+    \item[ID:] Eine eindeutige Bezeichnung, anhand derer der Eintrag
+        referenzierbar ist. In \LaTeX{} kann man bei Verwendung des
+        \mbox{\file{bibtex}-}Pakets zum Beispiel den in \autoref{lst:id-usage}
+        gezeigten Code schreiben.
+\begin{lstlisting}[language=TeX,label=lst:id-usage,caption=Beispiel für die Nutzung einer Eintrags-ID]
+% [...]
+wird jedoch heute auch außerhalb dieser Umgebung genutzt, um Literaturquellen zu
+beschreiben.\cite{wiki:BibTeX}
+\end{lstlisting}
+        \raggedright{
+            Der Befehl \lstinlineTeX|\cite{wiki:BibTeX}| erzeugt eine Referenz
+            auf die Quelle mit der ID \mbox{\lstinlineplain|wiki:BibTeX|}. Das
+            Ergebnis kann man in \autoref{sec:das-bibtex-datenformat} dieses
+            Dokuments sehen.
+        }
+    \item[Felder:] Einfache Name-Wert-Paare zur näheren Beschreibung des
+        Eintrags, wie zum Beispiel $(Autor,\text{Wilhelm Busch})$ oder
+        $(Jahr,1978)$.
+\end{description}
+
+\subsubsection{Präambel-Elemente}
+
+Die Präambel ist ein speziell für die Verwendung mit \TeX{} oder \LaTeX{}
+gedachtes Feature von \BibTeX{}. Über sie kann man Code spezifizieren, der
+vom \mbox{\BibTeX-}Programm ausgeführt werden soll, bevor die Bibliographie
+aufgebaut wird. Beispielsweise könnte man so \mbox{\TeX-}Makros definieren, die
+dann innerhalb der Datenbank aufrufbar sind.
+
+\subsubsection{Zeichenketten}
+
+\def\temp{\enquote{Wikipedia, Die freie Enzyklopädie}}
+
+Innerhalb einer \mbox{\BibTeX-}Datenbank können Werte mehrfach an verschiedenen
+Orten auftreten. Zwei typische Beispiele dafür sind die folgenden:
+\begin{itemize}
+    \item Oft ist Wikipedia eine sehr hilfreiche Quelle für einzelne spezielle
+        Informationen, die sich nicht in Fachbüchern finden. Es ist daher
+        sicherlich keine Seltenheit, dass innerhalb einer Arbeit mehrere
+        Wikipedia-Seiten zitiert werden. Diese benötigen alle einen eigenen
+        Eintrag in der Datenbank, aber denselben Enzyklopädie-Titel \temp.
+    \item Aus einem Fachbuch werden verschiedene Stellen zitiert. Man legt dafür
+        einzelne Einträge mit konkreten Seitenzahlen an, die aber in allen
+        anderen Feldern (Autor, Titel, \dots) identisch sind.
+\end{itemize}
+Damit solche Wiederholungen nicht immer wieder neu vollständig ausgeschrieben
+werden müssen, lassen sich Aliase für Zeichenketten\footnote{
+    {\titlelike Zeichenkette:} Abfolge von Buchstaben, Ziffern und sonstigen Schriftzeichen
+} festlegen. Beispielsweise definiert man, dass die Zeichenkette \temp{} den
+Namen \file{wikiTitle} bekommen soll. Danach kann man in allen Werten, in denen der Titel der Wikipedia stehen soll, einfach den Alias \file{wikiTitle}
+einfügen. Das \mbox{\BibTeX-}Programm ersetzt diesen dann bei der Interpretation
+der Datenbank durch den eigentlichen Wert.
+
+Konkret können \mbox{\BibTeX-}Datenbanken \emph{String-Elemente} enthalten. Ein
+String-Element besteht aus einer oder mehreren Definitionen für Zeichenketten-Aliase (siehe \autoref{fig:structurestring}).
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[with background]
+    \begin{scope}
+        [ tree layout
+        , grow=down
+        , semithick
+        , every node/.style={anchor=base}
+        ]
+        \node[database element] {String}
+            child { node {Alias-Definition}
+                    child {node {Name}}
+                    child {node {Wert}}
+                  }
+            child { node {Alias-Definition}
+                    child {node {Name}}
+                    child {node {Wert}}
+                  }
+            child { node[minimum height=1.2em] {\dots}
+                    edge from parent[child anchor=north]
+                  };
+    \end{scope}
+    \end{tikzpicture}
+    \caption{Struktur eines String-Elements}
+    \label{fig:structurestring}
+\end{figure}
+
+\subsection{Überblick über die konkrete \mbox{\BibTeX-}Syntax}
