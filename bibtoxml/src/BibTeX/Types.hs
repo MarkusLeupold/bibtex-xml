@@ -11,55 +11,55 @@ data EntryType = Article | Book | Booklet | Conference | Inbook | Incollection |
                  Proceedings | Techreport | Unpublished | UnknownEntry String
                  deriving Show
 
-data TagType = Address | Author | Booktitle | Chapter | Edition | Editor |
-               Howpublished | Institution | Isbn | Journal | Month | Note |
-               Number | Organization | Pages | Publisher | School | Series |
-               Title | Type | Volume | Year | UnknownTag String
-               deriving (Show, Eq, Ord)
+data FieldName = Address | Author | Booktitle | Chapter | Edition | Editor |
+                 Howpublished | Institution | Isbn | Journal | Month | Note |
+                 Number | Organization | Pages | Publisher | School | Series |
+                 Title | Type | Volume | Year | UnknownField String
+                 deriving (Show, Eq, Ord)
 
 type EntryKey = String
-data TagValue = LiteralValue String
-              | ReferencedValue String
-              | ComposedValue TagValue TagValue
-              deriving Show
+data Value = LiteralValue String
+           | ReferencedValue String
+           | ComposedValue Value Value
+           deriving Show
 
-composeTagValue :: TagValue -> TagValue -> TagValue
-composeTagValue (LiteralValue s1) (LiteralValue s2) = LiteralValue (s1 ++ s2)
-composeTagValue v1 v2                               = ComposedValue v1 v2
+composeValue :: Value -> Value -> Value
+composeValue (LiteralValue s1) (LiteralValue s2) = LiteralValue (s1 ++ s2)
+composeValue v1 v2                               = ComposedValue v1 v2
 
-expandTagValue :: StringMap -> TagValue -> TagValue
-expandTagValue _ (LiteralValue s)      = LiteralValue s
-expandTagValue m (ReferencedValue s)   = case m Map.!? s of
-                                             Nothing -> undefined
-                                             Just v  -> expandTagValue m v
-expandTagValue m (ComposedValue v1 v2) = composeTagValue (expandTagValue m v1)
-                                                         (expandTagValue m v2)
-
-
-type StringMap = Map String TagValue
-
-type Tags     = Map TagType TagValue
+expandValue :: StringMap -> Value -> Value
+expandValue _ (LiteralValue s)      = LiteralValue s
+expandValue m (ReferencedValue s)   = case m Map.!? s of
+                                          Nothing -> undefined
+                                          Just v  -> expandValue m v
+expandValue m (ComposedValue v1 v2) = composeValue (expandValue m v1)
+                                                   (expandValue m v2)
 
 
-data Element = Entry      { entryType :: EntryType
-                          , entryKey  :: EntryKey
-                          , entryTags :: Tags
+type StringMap = Map String Value
+
+type Fields    = Map FieldName Value
+
+
+data Element = Entry      { entryType   :: EntryType
+                          , entryKey    :: EntryKey
+                          , entryFields :: Fields
                           }
              | Comment    String
              | StringDecl StringMap
              deriving Show
 
 emptyEntry :: EntryType -> EntryKey -> Element
-emptyEntry t k = Entry { entryType = t
-                       , entryKey  = k
-                       , entryTags = Map.empty
+emptyEntry t k = Entry { entryType   = t
+                       , entryKey    = k
+                       , entryFields = Map.empty
                        }
 
-addTag :: TagType -> TagValue -> Element -> Element
-addTag ttype tval (Entry etype ekey etags) =
-    Entry { entryType = etype
-          , entryKey  = ekey
-          , entryTags = Map.insert ttype tval etags
+addTag :: FieldName -> Value -> Element -> Element
+addTag ttype tval (Entry etype ekey eFields) =
+    Entry { entryType   = etype
+          , entryKey    = ekey
+          , entryFields = Map.insert ttype tval eFields
           }
 
 

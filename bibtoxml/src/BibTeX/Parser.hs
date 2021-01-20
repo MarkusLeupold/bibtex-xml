@@ -66,54 +66,54 @@ parseEntryKey s = case lstrip s of
                                      ++ "character"
 
 
-parseTagType :: String -> (Maybe TagType, String)
-parseTagType s = let (t, r) = span Char.isAlpha s
-                     t_lc   = map Char.toLower t
-                 in
-                 case t_lc of
-                 ""             -> (Nothing, r)
-                 "address"      -> (Just Address, r)
-                 "author"       -> (Just Author, r)
-                 "booktitle"    -> (Just Booktitle, r)
-                 "chaper"       -> (Just Chapter, r)
-                 "edition"      -> (Just Edition, r)
-                 "editor"       -> (Just Editor, r)
-                 "howpublished" -> (Just Howpublished, r)
-                 "institution"  -> (Just Institution, r)
-                 "isbn"         -> (Just Isbn, r)
-                 "journal"      -> (Just Journal, r)
-                 "month"        -> (Just Month, r)
-                 "note"         -> (Just Note, r)
-                 "number"       -> (Just Number, r)
-                 "organization" -> (Just Organization, r)
-                 "pages"        -> (Just Pages, r)
-                 "publisher"    -> (Just Publisher, r)
-                 "school"       -> (Just School, r)
-                 "series"       -> (Just Series, r)
-                 "title"        -> (Just Title, r)
-                 "type"         -> (Just Type, r)
-                 "volume"       -> (Just Volume, r)
-                 "year"         -> (Just Year, r)
-                 _              -> (Just (UnknownTag t_lc), r)
+parseFieldName :: String -> (Maybe FieldName, String)
+parseFieldName s = let (t, r) = span Char.isAlpha s
+                       t_lc   = map Char.toLower t
+                   in
+                   case t_lc of
+                   ""             -> (Nothing, r)
+                   "address"      -> (Just Address, r)
+                   "author"       -> (Just Author, r)
+                   "booktitle"    -> (Just Booktitle, r)
+                   "chaper"       -> (Just Chapter, r)
+                   "edition"      -> (Just Edition, r)
+                   "editor"       -> (Just Editor, r)
+                   "howpublished" -> (Just Howpublished, r)
+                   "institution"  -> (Just Institution, r)
+                   "isbn"         -> (Just Isbn, r)
+                   "journal"      -> (Just Journal, r)
+                   "month"        -> (Just Month, r)
+                   "note"         -> (Just Note, r)
+                   "number"       -> (Just Number, r)
+                   "organization" -> (Just Organization, r)
+                   "pages"        -> (Just Pages, r)
+                   "publisher"    -> (Just Publisher, r)
+                   "school"       -> (Just School, r)
+                   "series"       -> (Just Series, r)
+                   "title"        -> (Just Title, r)
+                   "type"         -> (Just Type, r)
+                   "volume"       -> (Just Volume, r)
+                   "year"         -> (Just Year, r)
+                   _              -> (Just (UnknownField t_lc), r)
 
-parseTagValue :: String -> (TagValue, String)
-parseTagValue = _parseTagValue [ numberParser
-                               , referenceParser
-                               , delimitedValueParser
-                               ]
+parseValue :: String -> (Value, String)
+parseValue = _parseValue [ numberParser
+                         , referenceParser
+                         , delimitedValueParser
+                         ]
 
 -- | a tuple describing a tag value parser
 -- 1st element: predicate function to determine if the parser can be applied to
 --              an input stream
 -- 2nd element: the actual parser function which returns the raw parsed value
 --              and the remaining input stream
--- 3rd element: constructor function to turn the raw value into a TagValue
-type TagValueParser = ( String -> Bool
-                      , String -> (String, String)
-                      , String -> TagValue
-                      )
+-- 3rd element: constructor function to turn the raw value into a Value
+type ValueParser = ( String -> Bool
+                   , String -> (String, String)
+                   , String -> Value
+                   )
 
-numberParser :: TagValueParser
+numberParser :: ValueParser
 numberParser = ( \ s -> (not (null s)) && (Char.isDigit (head s))
                , span Char.isDigit
                , LiteralValue
@@ -122,13 +122,13 @@ numberParser = ( \ s -> (not (null s)) && (Char.isDigit (head s))
 isStringNameChar :: Char -> Bool
 isStringNameChar = Char.isAlpha
 
-referenceParser :: TagValueParser
+referenceParser :: ValueParser
 referenceParser = ( \ s -> (not (null s)) && (isStringNameChar (head s))
                   , span isStringNameChar
                   , ReferencedValue
                   )
 
-delimitedValueParser :: TagValueParser
+delimitedValueParser :: ValueParser
 delimitedValueParser =
     ( \ s -> (not (null s)) && (elem (head s) "\"{")
     , \ (c:cs) -> let closingDelimiter = if c == '"' then '"' else '}'
@@ -144,22 +144,22 @@ delimitedValueParser =
     )
 
 -- | parse a tag value using one of the given parsers
-_parseTagValue :: [ TagValueParser ]
-               -> String
-               -> (TagValue, String)
-_parseTagValue ps cs =
+_parseValue :: [ ValueParser ]
+            -> String
+            -> (Value, String)
+_parseValue ps cs =
     let cs' = lstrip cs
     in foldr ( \ (pr, f, cons) b ->
                    if pr cs'
                        then let (v_raw, r) = f cs'
-                                v = cons v_raw :: TagValue
+                                v = cons v_raw :: Value
                             in case lstrip r of
-                                   '#':rs -> let (v', r') = _parseTagValue ps rs
+                                   '#':rs -> let (v', r') = _parseValue ps rs
                                              in (ComposedValue v v', r')
                                    _      -> (v, r)
                             else b
              )
-             ( error_midway cs $ "_parseTagValue{BibToXml}: Found no matching "
+             ( error_midway cs $ "_parseValue{BibToXml}: Found no matching "
                                  ++ "parser function."
              )
              ps
@@ -217,8 +217,8 @@ _parseDelimitedValue t b (c:cs) =
     in (c:v, r)
 
 
-parseTag :: String -> (Maybe (TagType, TagValue), String)
-parseTag s = let (t, r) = parseTagType (lstrip s) in
+parseTag :: String -> (Maybe (FieldName, Value), String)
+parseTag s = let (t, r) = parseFieldName (lstrip s) in
              case t of
              -- If t is Nothing, there wasn't found any tag type. We assume that
              -- the tag is empty and therefore evaluate to Nothing and the
@@ -228,7 +228,7 @@ parseTag s = let (t, r) = parseTagType (lstrip s) in
              -- (i.e. '='), optionally preceded by some whitespace. If found,
              -- start parsing the tag value. Otherwise, raise an error.
              Just t' -> case lstrip r of
-                        '=':r' -> let (v, r'') = parseTagValue r' in
+                        '=':r' -> let (v, r'') = parseValue r' in
                                   (Just (t', v), r'')
                         c:cs   -> error_midway
                                       (c:cs)
@@ -240,26 +240,26 @@ parseTag s = let (t, r) = parseTagType (lstrip s) in
                                           "end of string when expecting " ++
                                           "the following character: '='"
 
-parseTags :: String -> (Tags, String)
-parseTags s = let (mtv, r) = parseTag s
-                  r'       = lstrip r
-              in
-              case r' of
-              -- If we encounter a comma, then there could be another tag. Union
-              -- the current tag (i.e. mtv) with all following tags.
-              ',':cs -> let (m, r'') = parseTags cs in
-                        ( maybe m (\ (t, v) -> Map.insert t v m) mtv
-                        , r''
-                        )
-              -- If the first character of r' is not a comma, the tag list must
-              -- have ended. Evaluate to the empty Map if the current tag (i.e.
-              -- mtv) is Nothing or, otherwise, to a Map containing only the
-              -- current tag.
-              _      -> ( maybe Map.empty
-                                (\ (t, v) -> Map.insert t v Map.empty)
-                                mtv
-                        , r'
-                        )
+parseFields :: String -> (Fields, String)
+parseFields s = let (mtv, r) = parseTag s
+                    r'       = lstrip r
+                in
+                case r' of
+                -- If we encounter a comma, then there could be another tag. Union
+                -- the current tag (i.e. mtv) with all following Fields.
+                ',':cs -> let (m, r'') = parseFields cs in
+                          ( maybe m (\ (t, v) -> Map.insert t v m) mtv
+                          , r''
+                          )
+                -- If the first character of r' is not a comma, the tag list must
+                -- have ended. Evaluate to the empty Map if the current tag (i.e.
+                -- mtv) is Nothing or, otherwise, to a Map containing only the
+                -- current tag.
+                _      -> ( maybe Map.empty
+                                  (\ (t, v) -> Map.insert t v Map.empty)
+                                  mtv
+                          , r'
+                          )
 
 
 parseStringDecl :: String -> (StringMap, String)
@@ -268,7 +268,7 @@ parseStringDecl s =
     in if null name
            then (Map.empty, s)
            else let afterEquals       = stripDelimiter '=' (True,False) r
-                    (val, afterValue) = parseTagValue afterEquals
+                    (val, afterValue) = parseValue afterEquals
                 in case lstrip afterValue of
                        ',':r -> let (m, r') = parseStringDecl r
                                 in (Map.insert name val m, r')
@@ -284,9 +284,9 @@ parseDataBlock s =
         Left t ->
             let (key, afterKey)   = parseEntryKey afterBrace
                 afterComma        = stripDelimiter ',' (True,False) afterKey
-                (tags, afterTags) = parseTags afterComma
-                remaining         = stripDelimiter '}' (True,False) afterTags
-            in (Entry t key tags, remaining)
+                (fields, afterFields) = parseFields afterComma
+                remaining         = stripDelimiter '}' (True,False) afterFields
+            in (Entry t key fields, remaining)
         Right "string" ->
             let (m, afterDecl) = parseStringDecl afterBrace
                 remaining      = stripDelimiter '}' (True,False) afterDecl

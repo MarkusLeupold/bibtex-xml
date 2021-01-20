@@ -27,7 +27,7 @@ instance ToString BT.EntryType where
     toString BT.Unpublished      = "unpublished"
     toString (BT.UnknownEntry s) = s
 
-instance ToString BT.TagType where
+instance ToString BT.FieldName where
     toString BT.Address        = "address"
     toString BT.Author         = "author"
     toString BT.Booktitle      = "booktitle"
@@ -50,7 +50,7 @@ instance ToString BT.TagType where
     toString BT.Type           = "type"
     toString BT.Volume         = "volume"
     toString BT.Year           = "year"
-    toString (BT.UnknownTag s) = s
+    toString (BT.UnknownField s) = s
 
 instance ToString String where toString s = s
 
@@ -58,7 +58,7 @@ class ToElements t where
     toElements :: t -> [XML.Element]
 
 
-instance ToElements BT.TagValue where
+instance ToElements BT.Value where
     toElements (BT.LiteralValue s) =
         [ XML.node ( XML.blank_name { XML.qName = "literalValue" } )
                    ( s )
@@ -73,7 +73,7 @@ instance ToElements BT.TagValue where
         ]
     toElements (BT.ComposedValue v1 v2) = (toElements v1) ++ (toElements v2)
 
-instance ToElements (BT.TagType, BT.TagValue) where
+instance ToElements (BT.FieldName, BT.Value) where
     toElements (t, v) =
         [ XML.node ( XML.blank_name { XML.qName = "tag" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
@@ -85,10 +85,10 @@ instance ToElements (BT.TagType, BT.TagValue) where
                    )
         ]
 
-instance ToElements [(BT.TagType, BT.TagValue)] where
+instance ToElements [(BT.FieldName, BT.Value)] where
     toElements = (>>= (toElements))
 
-instance ToElements (String, BT.TagValue) where
+instance ToElements (String, BT.Value) where
     toElements (s, v) =
         [ XML.node ( XML.blank_name { XML.qName = "string" } )
                   ( [ XML.Attr { XML.attrKey = XML.blank_name
@@ -100,13 +100,13 @@ instance ToElements (String, BT.TagValue) where
                   )
          ]
 
-instance ToElements [(String, BT.TagValue)] where
+instance ToElements [(String, BT.Value)] where
     toElements = (>>= (toElements))
 
 instance ToElements BT.Element where
     toElements BT.Entry { BT.entryType = t
                         , BT.entryKey  = k
-                        , BT.entryTags = tags
+                        , BT.entryFields = fields
                         } =
         [ XML.node ( XML.blank_name { XML.qName = "entry" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
@@ -118,7 +118,7 @@ instance ToElements BT.Element where
                                 , XML.attrVal = toString t
                                 }
                      ]
-                   , toElements $ Map.toAscList tags
+                   , toElements $ Map.toAscList fields
                    )
         ]
     toElements (BT.Comment s) =
