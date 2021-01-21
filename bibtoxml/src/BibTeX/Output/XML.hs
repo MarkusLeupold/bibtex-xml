@@ -132,5 +132,5 @@ instance ToElements [BT.Element] where
                                ( es >>= toElements )
                     ]
 
-toElement :: [BT.Element] -> XML.Element
+toElement :: BT.Database -> XML.Element
 toElement = (\ (x:xs) -> x) . toElements
