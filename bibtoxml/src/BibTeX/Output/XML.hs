@@ -7,6 +7,9 @@ import qualified Text.XML.Light as XML
 import qualified Data.Map.Strict as Map
 
 
+data Format = Format { includeComments :: Bool } deriving Show
+
+
 class ToString t where
     toString :: t -> String
 
@@ -55,15 +58,15 @@ instance ToString BT.FieldName where
 instance ToString String where toString s = s
 
 class ToElements t where
-    toElements :: t -> [XML.Element]
+    toElements :: Format -> t -> [XML.Element]
 
 
 instance ToElements BT.Value where
-    toElements (BT.LiteralValue s) =
+    toElements _ (BT.LiteralValue s) =
         [ XML.node ( XML.blank_name { XML.qName = "literalValue" } )
                    ( s )
         ]
-    toElements (BT.ReferencedValue s) =
+    toElements _ (BT.ReferencedValue s) =
         [ XML.node ( XML.blank_name { XML.qName = "referencedValue" } )
                    ( XML.Attr { XML.attrKey =
                                     XML.blank_name { XML.qName = "name" }
@@ -71,43 +74,44 @@ instance ToElements BT.Value where
                               }
                    )
         ]
-    toElements (BT.ComposedValue v1 v2) = (toElements v1) ++ (toElements v2)
+    toElements f (BT.ComposedValue v1 v2) =
+        (toElements f v1) ++ (toElements f v2)
 
 instance ToElements (BT.FieldName, BT.Value) where
-    toElements (t, v) =
+    toElements f (t, v) =
         [ XML.node ( XML.blank_name { XML.qName = "field" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
                                                     { XML.qName = "name" }
                                 , XML.attrVal = toString t
                                 }
                      ]
-                   , toElements v
+                   , toElements f v
                    )
         ]
 
 instance ToElements [(BT.FieldName, BT.Value)] where
-    toElements = (>>= (toElements))
+    toElements f = (>>= (toElements f))
 
 instance ToElements (String, BT.Value) where
-    toElements (s, v) =
+    toElements f (s, v) =
         [ XML.node ( XML.blank_name { XML.qName = "string" } )
                   ( [ XML.Attr { XML.attrKey = XML.blank_name
                                                    { XML.qName = "name" }
                                , XML.attrVal = s
                                }
                     ]
-                  , toElements v
+                  , toElements f v
                   )
          ]
 
 instance ToElements [(String, BT.Value)] where
-    toElements = (>>= (toElements))
+    toElements f = (>>= (toElements f))
 
 instance ToElements BT.Element where
-    toElements BT.Entry { BT.entryType = t
-                        , BT.entryKey  = k
-                        , BT.entryFields = fields
-                        } =
+    toElements f BT.Entry { BT.entryType = t
+                          , BT.entryKey  = k
+                          , BT.entryFields = fields
+                          } =
         [ XML.node ( XML.blank_name { XML.qName = "entry" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
                                                     { XML.qName = "id" }
@@ -118,19 +122,28 @@ instance ToElements BT.Element where
                                 , XML.attrVal = toString t
                                 }
                      ]
-                   , toElements $ Map.toAscList fields
+                   , toElements f $ Map.toAscList fields
                    )
         ]
-    toElements (BT.Comment s) =
-        [ XML.node ( XML.blank_name { XML.qName = "comment" } )
-                   s
-        ]
-    toElements (BT.StringDecl m) = toElements $ Map.toAscList m
+    toElements f (BT.Comment s) =
+        if includeComments f then
+            [ XML.node ( XML.blank_name { XML.qName = "comment" } )
+                       s
+            ]
+        else []
+    toElements f (BT.StringDecl m) = toElements f $ Map.toAscList m
 
 instance ToElements [BT.Element] where
-    toElements es = [ XML.node ( XML.blank_name { XML.qName = "database" } )
-                               ( es >>= toElements )
-                    ]
+    toElements f es = [ XML.node ( XML.blank_name { XML.qName = "database" } )
+                                 ( es >>= (toElements f) )
+                      ]
 
 toElement :: BT.Database -> XML.Element
-toElement = (\ (x:xs) -> x) . toElements
+toElement db =
+    (\ (x:xs) -> x)
+    $ toElements (Format { includeComments = True }) db
+
+toElementWithoutComments :: BT.Database -> XML.Element
+toElementWithoutComments db =
+    (\ (x:xs) -> x)
+    $ toElements (Format { includeComments = False }) db
