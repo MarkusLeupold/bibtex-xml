@@ -1,1 +1,6 @@
-submission-folder
+*
+!.gitignore
+!resources
+!tex
+!bib
+!Makefile

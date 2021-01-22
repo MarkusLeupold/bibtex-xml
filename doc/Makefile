@@ -1,8 +1,19 @@
+# == The PDF documentation =====================================================
+
 TEXDIR    := tex
 TEXOUTDIR := $(TEXDIR)/out
 TEXMAIN   := bibtex-xml-dokumentation
+PDFDIR    := pdf
 
-pdfdoc: tex/bibtex-xml-dokumentation.tex
+$(TEXOUTDIR):
+	mkdir $(TEXOUTDIR)
+
+$(PDFDIR):
+	mkdir $(PDFDIR)
+
+pdfdoc: $(TEXDIR)/$(TEXMAIN).tex \
+        $(TEXOUTDIR) \
+        $(PDFDIR)
 	lualatex --interaction=nonstopmode --output-directory=$(TEXOUTDIR) \
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
 	biber --onlylog $(TEXOUTDIR)/$(TEXMAIN)
@@ -10,7 +21,7 @@ pdfdoc: tex/bibtex-xml-dokumentation.tex
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
 	lualatex --interaction=nonstopmode --output-directory=$(TEXOUTDIR) \
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
-	mv $(TEXOUTDIR)/$(TEXMAIN).pdf pdf/
+	mv $(TEXOUTDIR)/$(TEXMAIN).pdf $(PDFDIR)/
 
 
 # == The project submission folder =============================================
