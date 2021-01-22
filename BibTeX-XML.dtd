@@ -1,0 +1,22 @@
+<!-- Only use this DTD with documents that don't have fully-qualified names -->
+
+<!ELEMENT database        (#PCDATA|entry|string)*>
+<!ELEMENT entry           (field)*>
+<!ELEMENT string          (literalValue|referencedValue)+>
+<!ELEMENT field           (literalValue|referencedValue)+>
+<!ELEMENT literalValue    (#PCDATA)>
+<!ELEMENT referencedValue EMPTY>
+
+<!ATTLIST entry
+    id   ID    #REQUIRED
+    type CDATA #REQUIRED
+>
+<!ATTLIST string
+    name NMTOKEN #REQUIRED
+>
+<!ATTLIST field
+    name NMTOKEN #REQUIRED
+>
+<!ATTLIST referencedValue
+    name NMTOKEN #REQUIRED
+>
