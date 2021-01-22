@@ -1,6 +1,6 @@
 <!-- Only use this DTD with documents that don't have fully-qualified names -->
 
-<!ELEMENT database        (#PCDATA|entry|string)*>
+<!ELEMENT database        (entry|string)*>
 <!ELEMENT entry           (field)*>
 <!ELEMENT string          (literalValue|referencedValue)+>
 <!ELEMENT field           (literalValue|referencedValue)+>
