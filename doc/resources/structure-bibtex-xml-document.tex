@@ -12,26 +12,38 @@
 
         \node[xml element, dashed] (xml root) {/}
             child
-              { node[xml element] {BibTeX:database}
+              { node[xml element] {database}
+                child
+                  { node[xml attribute] {xmlns}
+                    child
+                      { node
+                          [ rectangle
+                          , font=\scriptsize
+%                          , maximum width=11em
+                          , text depth=
+                          ]
+                          {\url{https://github.com/MarkusLeupold/bibtex-xml}}
+                      }
+                  }
                 child
                   { node[operator] {$*$}
                     child
                       { node[operator] {$|$}
                         child
-                          { node[xml element] {BibTeX:entry}
+                          { node[xml element] {entry}
                             child {node[xml attribute] {id}}
                             child {node[xml attribute] {type}}
                             child
                               { node[operator] {$*$}
                                 child
-                                  { node [xml element] {BibTeX:field}
+                                  { node [xml element] {field}
                                     child {node[xml attribute] {name}}
                                     child {node[production] {valueProd\/}}
                                   }
                               }
                           }
                         child
-                          { node [xml element] {BibTeX:string}
+                          { node [xml element] {string}
                             child {node[xml attribute] {name}}
                             child {node[production] {valueProd\/}}
                           }
