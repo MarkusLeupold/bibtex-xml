@@ -11,3 +11,20 @@ pdfdoc: tex/bibtex-xml-dokumentation.tex
 	lualatex --interaction=nonstopmode --output-directory=$(TEXOUTDIR) \
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
 	mv $(TEXOUTDIR)/$(TEXMAIN).pdf pdf/
+
+
+# == The project submission folder =============================================
+
+BIBTEXXMLDTD   := ../BibTeX-XML.dtd
+BIBTEXDATABASE := resources/Projekt_BIB_original.txt
+
+submission-folder:
+	mkdir submission-folder
+
+submission: submission-folder \
+            pdfdoc \
+            $(BIBTEXXMLDTD) \
+            $(BIBTEXDATABASE)
+	cp pdf/$(TEXMAIN).pdf submission-folder/
+	cp $(BIBTEXXMLDTD)    submission-folder/
+	cp $(BIBTEXDATABASE)  submission-folder/
