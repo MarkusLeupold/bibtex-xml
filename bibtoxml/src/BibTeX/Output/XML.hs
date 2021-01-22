@@ -9,6 +9,8 @@ import qualified Data.Map.Strict as Map
 
 data Format = Format { includeComments :: Bool } deriving Show
 
+bibtex_xml_ns_uri = "https://github.com/MarkusLeupold/bibtex-xml"
+
 
 class ToString t where
     toString :: t -> String
@@ -57,17 +59,21 @@ instance ToString BT.FieldName where
 
 instance ToString String where toString s = s
 
+
+name_with_ns = XML.blank_name { XML.qURI = Just bibtex_xml_ns_uri } :: XML.QName
+
+
 class ToElements t where
     toElements :: Format -> t -> [XML.Element]
 
 
 instance ToElements BT.Value where
     toElements _ (BT.LiteralValue s) =
-        [ XML.node ( XML.blank_name { XML.qName = "literalValue" } )
+        [ XML.node ( name_with_ns { XML.qName = "literalValue" } )
                    ( s )
         ]
     toElements _ (BT.ReferencedValue s) =
-        [ XML.node ( XML.blank_name { XML.qName = "referencedValue" } )
+        [ XML.node ( name_with_ns { XML.qName = "referencedValue" } )
                    ( XML.Attr { XML.attrKey =
                                     XML.blank_name { XML.qName = "name" }
                               , XML.attrVal = s
@@ -79,7 +85,7 @@ instance ToElements BT.Value where
 
 instance ToElements (BT.FieldName, BT.Value) where
     toElements f (t, v) =
-        [ XML.node ( XML.blank_name { XML.qName = "field" } )
+        [ XML.node ( name_with_ns { XML.qName = "field" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
                                                     { XML.qName = "name" }
                                 , XML.attrVal = toString t
@@ -94,7 +100,7 @@ instance ToElements [(BT.FieldName, BT.Value)] where
 
 instance ToElements (String, BT.Value) where
     toElements f (s, v) =
-        [ XML.node ( XML.blank_name { XML.qName = "string" } )
+        [ XML.node ( name_with_ns { XML.qName = "string" } )
                   ( [ XML.Attr { XML.attrKey = XML.blank_name
                                                    { XML.qName = "name" }
                                , XML.attrVal = s
@@ -112,7 +118,7 @@ instance ToElements BT.Element where
                           , BT.entryKey  = k
                           , BT.entryFields = fields
                           } =
-        [ XML.node ( XML.blank_name { XML.qName = "entry" } )
+        [ XML.node ( name_with_ns { XML.qName = "entry" } )
                    ( [ XML.Attr { XML.attrKey = XML.blank_name
                                                     { XML.qName = "id" }
                                 , XML.attrVal = toString k
@@ -127,15 +133,23 @@ instance ToElements BT.Element where
         ]
     toElements f (BT.Comment s) =
         if includeComments f then
-            [ XML.node ( XML.blank_name { XML.qName = "comment" } )
+            [ XML.node ( name_with_ns { XML.qName = "comment" } )
                        s
             ]
         else []
     toElements f (BT.StringDecl m) = toElements f $ Map.toAscList m
 
 instance ToElements [BT.Element] where
-    toElements f es = [ XML.node ( XML.blank_name { XML.qName = "database" } )
-                                 ( es >>= (toElements f) )
+    toElements f es = [ XML.node ( name_with_ns { XML.qName = "database" } )
+                                 ( [ XML.Attr
+                                         { XML.attrKey =
+                                               XML.blank_name
+                                                   { XML.qName = "xmlns" }
+                                         , XML.attrVal = bibtex_xml_ns_uri
+                                         }
+                                   ]
+                                 , es >>= (toElements f)
+                                 )
                       ]
 
 toElement :: BT.Database -> XML.Element
