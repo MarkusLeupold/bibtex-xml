@@ -7,6 +7,9 @@
 <!ELEMENT literalValue    (#PCDATA)>
 <!ELEMENT referencedValue EMPTY>
 
+<!ATTLIST database
+    xmlns CDATA #FIXED "https://github.com/MarkusLeupold/bibtex-xml"
+>
 <!ATTLIST entry
     id   ID    #REQUIRED
     type CDATA #REQUIRED
