@@ -90,7 +90,7 @@
 \lstset{
     basicstyle=\ttfamily,
     numbers=left,numberstyle=\tiny,
-    frame=single,aboveskip=\bigskipamount,belowskip=\bigskipamount,
+    frame=single,aboveskip=\medskipamount,belowskip=\medskipamount,
     breaklines,
     basicstyle=\footnotesize\ttfamily,
     keywordstyle=\color{text-darkred},
@@ -104,6 +104,7 @@
 \def\lstinlineTeX{\lstinline[language=TeX,basicstyle=\lstinlinebasicstyle]}
 \def\lstinlineXML{\lstinline[language=XML,basicstyle=\lstinlinebasicstyle]}
 
+\def\BibTeXdatabase{\mbox{\BibTeX-}Datenbank}
 \def\BibTeXXMLnamespace{\url{https://github.com/MarkusLeupold/bibtex-xml}}
 \def\BibTeXXML{\mbox{\BibTeX-}XML}
 \def\BibTeXXMLformat{\mbox{\BibTeX-}XML-Format}
@@ -128,6 +129,7 @@
     \input{tex/erzeugung-des-datenstroms-im-bibtex-xml-format.tex}
     
     \nocite{btxdoc}
+    \nocite{github-bibtex-xml}
     \printbibliography
     
 \end{document}
