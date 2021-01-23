@@ -48,6 +48,7 @@ parseArgs = _parseArgs default_args
 _parseArgs :: Args -> [String] -> IO Args
 _parseArgs a ("-o":f:r)  = _parseArgs (a { outputFile      = Just f }) r
 _parseArgs a ("-c":r)    = _parseArgs (a { includeComments = True   }) r
+_parseArgs _ ("-h":_)    = usage
 -- If an argument does not match one of the flagged arg's patterns but begins
 -- with a minus sign (i.e. '-') it can not have been used in the right way. So,
 -- we execute usage.
@@ -73,8 +74,9 @@ usage = do
                ++ " [args] [<input file>] [args]\n"
                ++ "\n"
                ++ "Where args are zero or more of the following:\n"
-               ++ " -o <file>  Output the results into <file>\n"
                ++ " -c         Include BibTeX comments as XML elements\n"
+               ++ " -h         Display this help message and exit\n"
+               ++ " -o <file>  Output the results into <file>\n"
                ++ "\n"
                ++ "If one of these args is specified more than once, only the\n"
                ++ "last one will be used. Also, currently only one input file\n"
