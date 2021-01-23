@@ -1,6 +1,13 @@
 *
+
 !.gitignore
-!resources
-!tex
-!bib
 !Makefile
+
+!resources
+!resources/*
+
+!tex
+!tex/*
+
+!bib
+!bib/*
