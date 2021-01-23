@@ -1,35 +1,13 @@
 RESOURCES := resources
-BIBTEXDATABASE := $(RESOURCES)/Projekt_BIB_original.txt
-
-# Resources that are generated during the documentation build process are put
-# into a special folder. This folder should be ignored by Git.
-RESOURCESGENERATED := resources-generated
-$(RESOURCESGENERATED):
-	mkdir $(RESOURCESGENERATED)
-
-BIBTEXXMLDOCUMENT := $(RESOURCESGENERATED)/Projekt_BIB_original.xml
-
-# The bibtoxml program
-BIBTOXMLROOTDIR := ../bibtoxml
-BIBTOXML := $(BIBTOXMLROOTDIR)/bin/bibtoxml
-$(BIBTOXML):
-	cd $(BIBTOXMLROOTDIR); \
-	make build; \
-	cd $(PWD)
-
-
-# == The BibTeX-XML document ===================================================
-
-$(BIBTEXXMLDOCUMENT): $(BIBTEXDATABASE) $(RESOURCESGENERATED) $(BIBTOXML)
-	$(BIBTOXML) -o $(BIBTEXXMLDOCUMENT) $(BIBTEXDATABASE)
-
 
 # == The PDF documentation =====================================================
 
 TEXDIR    := tex
 TEXOUTDIR := $(TEXDIR)/out
 TEXMAIN   := bibtex-xml-dokumentation
+TEXOUTPDF := $(TEXOUTDIR)/$(TEXMAIN).pdf
 PDFDIR    := pdf
+PDFFILE   := $(PDFDIR)/$(TEXMAIN).pdf
 
 $(TEXOUTDIR):
 	mkdir $(TEXOUTDIR)
@@ -37,10 +15,9 @@ $(TEXOUTDIR):
 $(PDFDIR):
 	mkdir $(PDFDIR)
 
-pdfdoc: $(TEXDIR)/$(TEXMAIN).tex \
-        $(RESOURCES) \
-        $(TEXOUTDIR) \
-        $(PDFDIR)
+$(TEXOUTPDF): $(TEXDIR)/$(TEXMAIN).tex \
+              $(RESOURCES) \
+              $(TEXOUTDIR)
 	lualatex --interaction=nonstopmode --output-directory=$(TEXOUTDIR) \
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
 	biber --onlylog $(TEXOUTDIR)/$(TEXMAIN)
@@ -48,32 +25,17 @@ pdfdoc: $(TEXDIR)/$(TEXMAIN).tex \
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
 	lualatex --interaction=nonstopmode --output-directory=$(TEXOUTDIR) \
 	    $(TEXDIR)/$(TEXMAIN).tex > /dev/null
-	mv $(TEXOUTDIR)/$(TEXMAIN).pdf $(PDFDIR)/
 
+$(PDFFILE): $(PDFDIR) $(TEXOUTPDF)
+	cp $(TEXOUTDIR)/$(TEXMAIN).pdf $(PDFDIR)/
 
-# == The project submission folder =============================================
+build: $(PDFFILE)
 
-BIBTEXXMLDTD   := ../BibTeX-XML.dtd
-SUBMISSIONDIR  := submission-folder
-
-$(SUBMISSIONDIR):
-	mkdir $(SUBMISSIONDIR)
-
-submission: $(SUBMISSIONDIR) \
-            pdfdoc \
-            $(BIBTEXDATABASE) \
-            $(BIBTEXXMLDOCUMENT) \
-            $(BIBTEXXMLDTD)
-	cp pdf/$(TEXMAIN).pdf   $(SUBMISSIONDIR)/
-	cp $(BIBTEXDATABASE)    $(SUBMISSIONDIR)/
-	cp $(BIBTEXXMLDOCUMENT) $(SUBMISSIONDIR)/
-	cp $(BIBTEXXMLDTD)      $(SUBMISSIONDIR)/
+clean-build: clean build
 
 
 # == Cleanup ===================================================================
 
-clean-everything:
-	rm -frd $(SUBMISSIONDIR)
+clean:
 	rm -frd $(PDFDIR)
 	rm -frd $(TEXOUTDIR)
-	rm -frd $(RESOURCESGENERATED)

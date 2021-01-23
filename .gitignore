@@ -1,0 +1,14 @@
+*
+
+!.gitignore
+!BibTeX-XML.dtd
+!Makefile
+
+!bibtoxml
+!bibtoxml/*
+
+!doc
+!doc/*
+
+!task
+!task/*
