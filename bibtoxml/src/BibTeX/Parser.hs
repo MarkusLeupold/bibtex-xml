@@ -1,12 +1,22 @@
-module BibTeX.Parser (parse) where
+module BibTeX.Parser (parse, result, remainder, log) where
 
 import BibTeX.Types
-import Prelude
+import Prelude hiding (log)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
 import qualified Data.Char as Char
-import Data.String.Utils (lstrip, rstrip)
+import Data.String.Utils (lstrip, rstrip, join)
 
+
+type Log = [String]
+empty_log = [] :: Log
+
+data Result t = Success { result    :: t
+                        , remainder :: String
+                        , log       :: Log
+                        }
+              | Failure { log :: Log }
+                deriving Show
 
 stripDelimiter :: Char -> (Bool, Bool) -> String -> String
 stripDelimiter d (l, r) s =
@@ -65,36 +75,55 @@ parseEntryKey s = case lstrip s of
                                      ++ "' when expecting an alphabetic "
                                      ++ "character"
 
+allFieldNames = [ "address", "author", "booktitle", "chaper", "edition"
+                , "editor", "howpublished", "institution", "isbn", "journal"
+                , "month", "note", "number", "organization", "pages"
+                , "publisher", "school", "series", "title", "type", "volume"
+                , "year"
+                ]
 
-parseFieldName :: String -> (Maybe FieldName, String)
-parseFieldName s = let (t, r) = span Char.isAlpha s
-                       t_lc   = map Char.toLower t
-                   in
-                   case t_lc of
-                   ""             -> (Nothing, r)
-                   "address"      -> (Just Address, r)
-                   "author"       -> (Just Author, r)
-                   "booktitle"    -> (Just Booktitle, r)
-                   "chaper"       -> (Just Chapter, r)
-                   "edition"      -> (Just Edition, r)
-                   "editor"       -> (Just Editor, r)
-                   "howpublished" -> (Just Howpublished, r)
-                   "institution"  -> (Just Institution, r)
-                   "isbn"         -> (Just Isbn, r)
-                   "journal"      -> (Just Journal, r)
-                   "month"        -> (Just Month, r)
-                   "note"         -> (Just Note, r)
-                   "number"       -> (Just Number, r)
-                   "organization" -> (Just Organization, r)
-                   "pages"        -> (Just Pages, r)
-                   "publisher"    -> (Just Publisher, r)
-                   "school"       -> (Just School, r)
-                   "series"       -> (Just Series, r)
-                   "title"        -> (Just Title, r)
-                   "type"         -> (Just Type, r)
-                   "volume"       -> (Just Volume, r)
-                   "year"         -> (Just Year, r)
-                   _              -> (Just (UnknownField t_lc), r)
+stringToFieldName :: String -> Maybe FieldName
+stringToFieldName s =
+    let s_lc   = map Char.toLower s
+    in  case s_lc of
+        "address"      -> Just Address
+        "author"       -> Just Author
+        "booktitle"    -> Just Booktitle
+        "chaper"       -> Just Chapter
+        "edition"      -> Just Edition
+        "editor"       -> Just Editor
+        "howpublished" -> Just Howpublished
+        "institution"  -> Just Institution
+        "isbn"         -> Just Isbn
+        "journal"      -> Just Journal
+        "month"        -> Just Month
+        "note"         -> Just Note
+        "number"       -> Just Number
+        "organization" -> Just Organization
+        "pages"        -> Just Pages
+        "publisher"    -> Just Publisher
+        "school"       -> Just School
+        "series"       -> Just Series
+        "title"        -> Just Title
+        "type"         -> Just Type
+        "volume"       -> Just Volume
+        "year"         -> Just Year
+        _              -> Nothing
+
+parseFieldName :: String -> Maybe (Result FieldName)
+parseFieldName s =
+    let (s', r) = span Char.isAlpha s
+    in  if s' == ""
+        then Nothing
+        else Just $ maybe ( Failure [ "Error: Found no valid field name. "
+                                      ++ "Expecting one of the following: "
+                                      ++ join ", " allFieldNames ++ "\n"
+                                      ++ "At the beginning of the stream \""
+                                      ++ take 50 s ++ "...\""
+                                    ]
+                          )
+                          ( \ n -> Success n r empty_log )
+                          (stringToFieldName s')
 
 parseValue :: String -> (Value, String)
 parseValue = _parseValue [ numberParser
@@ -217,49 +246,62 @@ _parseDelimitedValue t b (c:cs) =
     in (c:v, r)
 
 
-parseTag :: String -> (Maybe (FieldName, Value), String)
-parseTag s = let (t, r) = parseFieldName (lstrip s) in
-             case t of
-             -- If t is Nothing, there wasn't found any tag type. We assume that
-             -- the tag is empty and therefore evaluate to Nothing and the
-             -- remaining input stream.
-             Nothing -> (Nothing, r)
-             -- If a tag type has been found, look for an equals character
-             -- (i.e. '='), optionally preceded by some whitespace. If found,
-             -- start parsing the tag value. Otherwise, raise an error.
-             Just t' -> case lstrip r of
-                        '=':r' -> let (v, r'') = parseValue r' in
-                                  (Just (t', v), r'')
-                        c:cs   -> error_midway
-                                      (c:cs)
-                                      $ "parseTag{BibToXml}: found '"
-                                        ++ [c]
-                                        ++ "' when expecting the following "
-                                        ++ "character: '='"
-                        ""     -> error $ "parseTag{BibToXml}: found " ++
-                                          "end of string when expecting " ++
-                                          "the following character: '='"
+parseTag :: String -> Maybe (Result (FieldName, Value))
+parseTag s =
+    let logMessagePos = "While parsing the field at the beginning of "
+                        ++ "the input stream \""
+                        ++ take 50 s ++ "...\""
+        maybeFnResult = parseFieldName (lstrip s)
+    in  maybeFnResult >>=
+        ( \ fnResult -> case fnResult of
+            Failure l ->
+                Just $ Failure { log = l ++ [logMessagePos] }
+            -- If a field name has been found, look for an equals character
+            -- (i.e. '='), optionally preceded by some whitespace. If found,
+            -- start parsing the field value. Otherwise, raise an error.
+            Success n r l ->
+                case lstrip r of
+                    '=':r' -> let (v, r'') = parseValue r' in
+                                  Just $ Success (n, v) r'' l
+                    c:cs ->
+                        Just $ Failure $ l ++ [ "Error: found '"
+                                                ++ [c]
+                                                ++ "' when expecting the "
+                                                ++ "following character: '='\n"
+                                                ++ logMessagePos
+                                              ]
+                    "" ->
+                        Just $ Failure $ l ++ [ "Error: Found end of string "
+                                                ++ "when expecting the "
+                                                ++ "following character: '='\n"
+                                                ++ logMessagePos
+                                              ]
+        )
 
-parseFields :: String -> (Fields, String)
-parseFields s = let (mtv, r) = parseTag s
-                    r'       = lstrip r
-                in
-                case r' of
-                -- If we encounter a comma, then there could be another tag. Union
-                -- the current tag (i.e. mtv) with all following Fields.
-                ',':cs -> let (m, r'') = parseFields cs in
-                          ( maybe m (\ (t, v) -> Map.insert t v m) mtv
-                          , r''
-                          )
-                -- If the first character of r' is not a comma, the tag list must
-                -- have ended. Evaluate to the empty Map if the current tag (i.e.
-                -- mtv) is Nothing or, otherwise, to a Map containing only the
-                -- current tag.
-                _      -> ( maybe Map.empty
-                                  (\ (t, v) -> Map.insert t v Map.empty)
-                                  mtv
-                          , r'
-                          )
+parseFields :: String -> Result Fields
+parseFields s =
+    let logMessagePos = "While parsing the fields of an entry at "
+                        ++ "the beginning of the input stream \""
+                        ++ take 50 s ++ "...\""
+        maybeFResult = parseTag s
+    in  case maybeFResult of
+        Nothing                   -> parseFollowingFields s
+        Just (Failure l)          -> Failure $ l ++ [logMessagePos]
+        Just (Success (n, v) r l) ->
+            let fsResult = parseFollowingFields r
+            in  case fsResult of
+                Failure _ -> fsResult
+                Success fs r l_fs ->
+                    fsResult { result = Map.insert n v fs }
+    where
+        parseFollowingFields s =
+            case lstrip s of
+                -- If we encounter a comma, then there could be another Field.
+                -- Try to parse it.
+                ',':cs ->  parseFields cs
+                -- If the first character of (lstrip s) is not a comma, the
+                -- field list must have ended. Result to the empty Map.
+                _ -> Success Map.empty s empty_log
 
 
 parseStringDecl :: String -> (StringMap, String)
@@ -275,32 +317,63 @@ parseStringDecl s =
                        r     -> (Map.singleton name val, r)
 
 
-parseDataBlock :: String -> (Element, String)
+parseDataBlock :: String -> Result Element
 parseDataBlock s =
     let (t, s')     = parseDataBlockType s
         afterBrace  = stripDelimiter '{' (True,False) s'
     in
     case t of
+        Left (UnknownEntry t) ->
+            Failure ["Unknown Entry type \"" ++ t ++ "\""]
         Left t ->
-            let (key, afterKey)   = parseEntryKey afterBrace
-                afterComma        = stripDelimiter ',' (True,False) afterKey
-                (fields, afterFields) = parseFields afterComma
-                remaining         = stripDelimiter '}' (True,False) afterFields
-            in (Entry t key fields, remaining)
+            let (key, afterKey) = parseEntryKey afterBrace
+                afterComma      = stripDelimiter ',' (True,False) afterKey
+                fsResult        = parseFields afterComma
+            in  case fsResult of
+                Failure l ->
+                    Failure $ l ++ [ "While parsing a data block at the "
+                                     ++ "beginning of the input stream "
+                                     ++ "\"" ++ take 50 s ++ "...\""
+                                   ]
+                Success fs r l ->
+                    let remaining = stripDelimiter '}' (True,False) r
+                    in  Success (Entry t key fs) remaining l
         Right "string" ->
             let (m, afterDecl) = parseStringDecl afterBrace
                 remaining      = stripDelimiter '}' (True,False) afterDecl
-            in (StringDecl m, remaining)
+            in Success (StringDecl m) remaining empty_log
 
 
-parse :: String -> Database
-parse s = case lstrip s of
-          []     -> emptyDatabase
-          '@':cs -> let (e, r) = parseDataBlock cs
-                        es = parse r
-                    in pushFront e es
-          s      -> let (s', r) = span (/= '@') s
-                    in pushFront (Comment (rstrip s')) (parse r)
+parse :: String -> Result Database
+parse s =
+    case lstrip s of
+        ""     -> Success { result    = emptyDatabase
+                          , remainder = ""
+                          , log       = empty_log
+                          }
+        '@':cs ->
+            let elementResult = parseDataBlock cs in
+                case elementResult of
+                    Success e r l ->
+                        let dbResult = parse r
+                        in  dbResult { result = e : result dbResult
+                                     , log    = l ++ log dbResult
+                                     }
+                    Failure l ->
+                        let dbResult = parse (dropWhile (/='@') cs)
+                        in  dbResult { log = l ++
+                                             ( ( "Skipping to next '@' to try "
+                                                 ++ "recovering from a "
+                                                 ++ "previous error. The "
+                                                 ++ "current entry will be "
+                                                 ++ "dropped."
+                                               ) : log dbResult
+                                             )
+                                     }
+        s ->
+            let (s', r)  = span (/= '@') s
+                dbResult = parse r
+            in  dbResult { result = Comment (rstrip s') : result dbResult }
 
 
 error_midway remaining message = error $ message
