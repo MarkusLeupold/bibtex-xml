@@ -1,9 +1,16 @@
-module BibTeX.Parser (parse, result, remainder, log) where
+module BibTeX.Parser ( parse
+                     , parseUnique
+                     , result
+                     , remainder
+                     , log
+                     ) where
 
 import BibTeX.Types
 import Prelude hiding (log)
 import qualified Data.Map.Strict as Map
 import Data.Map.Strict (Map)
+import qualified Data.Set as Set
+import Data.Set (Set)
 import qualified Data.Char as Char
 import Data.String.Utils (lstrip, rstrip, join)
 
@@ -374,6 +381,30 @@ parse s =
             let (s', r)  = span (/= '@') s
                 dbResult = parse r
             in  dbResult { result = Comment (rstrip s') : result dbResult }
+
+parseUnique :: String -> Result Database
+parseUnique s =
+    let dbResult = parse s
+        (db, l)  = eliminateDuplicates Set.empty $ result dbResult
+    in  dbResult { result = db
+                 , log = log dbResult ++ l
+                 }
+    where
+        eliminateDuplicates :: (Set EntryKey) -> Database -> (Database, Log)
+        eliminateDuplicates ids (e:es) =
+            case e of
+                Entry _ k _ ->
+                    if Set.member k ids
+                        then let (db, l) = eliminateDuplicates ids es
+                             in  (db, (dup_mesg k) : l)
+                        else let (db, l) = eliminateDuplicates
+                                               (Set.insert k ids) es
+                             in  (e:db, l)
+                _ -> let (db, l) = eliminateDuplicates ids es
+                     in  (e:db, l)
+        eliminateDuplicates _ [] = (emptyDatabase, empty_log)
+        dup_mesg k = "Error: Duplicate entry id: \"" ++ k
+                     ++ "\". The entry will be dropped."
 
 
 error_midway remaining message = error $ message

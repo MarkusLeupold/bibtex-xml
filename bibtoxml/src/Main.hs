@@ -65,7 +65,7 @@ _parseArgs a []          = return a
 
 run :: Args -> IO ()
 run args = do bibtex       <- maybe getContents readFile $ inputFile args
-              parserResult <- return $ BT.parse bibtex
+              parserResult <- return $ BT.parseUnique bibtex
               db           <- return $ BT.result parserResult
               result       <- return $ convert (includeComments args) db
               maybe (putStrLn  ::           String -> IO ())
