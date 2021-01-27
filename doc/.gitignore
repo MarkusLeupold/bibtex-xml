@@ -4,10 +4,10 @@
 !Makefile
 
 !resources
-!resources/*
+!resources/**
 
 !tex
-!tex/*
+!tex/**
 
 !bib
-!bib/*
+!bib/**

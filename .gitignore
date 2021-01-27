@@ -5,10 +5,10 @@
 !Makefile
 
 !bibtoxml
-!bibtoxml/*
+!bibtoxml/**
 
 !doc
-!doc/*
+!doc/**
 
 !task
-!task/*
+!task/**
