@@ -10,16 +10,36 @@
 <!ATTLIST database
     xmlns CDATA #FIXED "https://github.com/MarkusLeupold/bibtex-xml"
 >
+
+<!--
+    Unfortunately, BibTeX's entry IDs are allowed to contain slashes (and
+    possibly a few more characters) which are not allowed inside values of XML's
+    ID and NMTOKEN types. This blocks a lot of semantics~~~e.g. the parser
+    doesn't know, that duplicates aren't allowed inside the id attribute of
+    entries. Also, we are not able to specify any kind of restriction for the
+    allowed characters inside an entry ID.
+-->
 <!ATTLIST entry
-    id   ID    #REQUIRED
+    id   CDATA #REQUIRED
     type CDATA #REQUIRED
 >
+
+<!--
+    Strings are allowed to be redefined in BibTeX, so we can't specify their
+    names as an ID attribute.
+    Warning: When changing the type of the name attribute of string, you have
+        to update the ATTLIST referencedValue accordingly, because
+        referencedValue are supposed to reference string elements by their name
+        attribute.
+-->
 <!ATTLIST string
     name NMTOKEN #REQUIRED
 >
+
 <!ATTLIST field
     name NMTOKEN #REQUIRED
 >
+
 <!ATTLIST referencedValue
     name NMTOKEN #REQUIRED
 >
