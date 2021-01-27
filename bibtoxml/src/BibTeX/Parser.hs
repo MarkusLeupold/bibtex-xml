@@ -319,22 +319,22 @@ parseStringDecl s =
 
 parseDataBlock :: String -> Result Element
 parseDataBlock s =
-    let (t, s')     = parseDataBlockType s
+    let logMessagePos = "While parsing a data block at the "
+                        ++ "beginning of the input stream "
+                        ++ "\"" ++ take 50 s ++ "...\""
+        (t, s')     = parseDataBlockType s
         afterBrace  = stripDelimiter '{' (True,False) s'
     in
     case t of
         Left (UnknownEntry t) ->
-            Failure ["Unknown Entry type \"" ++ t ++ "\""]
+            Failure ["Unknown Entry type \"" ++ t ++ "\"", logMessagePos]
         Left t ->
             let (key, afterKey) = parseEntryKey afterBrace
                 afterComma      = stripDelimiter ',' (True,False) afterKey
                 fsResult        = parseFields afterComma
             in  case fsResult of
                 Failure l ->
-                    Failure $ l ++ [ "While parsing a data block at the "
-                                     ++ "beginning of the input stream "
-                                     ++ "\"" ++ take 50 s ++ "...\""
-                                   ]
+                    Failure $ l ++ [logMessagePos]
                 Success fs r l ->
                     let remaining = stripDelimiter '}' (True,False) r
                     in  Success (Entry t key fs) remaining l
