@@ -24,7 +24,7 @@ instance ToString BT.EntryType where
     toString BT.Incollection     = "incollection"
     toString BT.Inproceedings    = "inproceedings"
     toString BT.Manual           = "manual"
-    toString BT.Masterthesis     = "masterthesis"
+    toString BT.Mastersthesis    = "mastersthesis"
     toString BT.Misc             = "misc"
     toString BT.Phdthesis        = "phdthesis"
     toString BT.Proceedings      = "proceedings"

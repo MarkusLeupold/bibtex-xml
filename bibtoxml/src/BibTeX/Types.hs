@@ -7,7 +7,7 @@ import qualified Data.Char as Char
 
 
 data EntryType = Article | Book | Booklet | Conference | Inbook | Incollection |
-                 Inproceedings | Manual | Masterthesis | Misc | Phdthesis |
+                 Inproceedings | Manual | Mastersthesis | Misc | Phdthesis |
                  Proceedings | Techreport | Unpublished | UnknownEntry String
                  deriving Show
 

@@ -46,7 +46,7 @@ parseDataBlockType s =
            "incollection"  -> (Left Incollection, r)
            "inproceedings" -> (Left Inproceedings, r)
            "manual"        -> (Left Manual, r)
-           "masterthesis"  -> (Left Masterthesis, r)
+           "mastersthesis" -> (Left Mastersthesis, r)
            "misc"          -> (Left Misc, r)
            "phdthesis"     -> (Left Phdthesis, r)
            "proceedings"   -> (Left Proceedings, r)
