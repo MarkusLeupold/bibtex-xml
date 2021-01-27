@@ -1,5 +1,6 @@
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             xmlns="https://github.com/MarkusLeupold/bibtex-xml"
+            xmlns:btxml="https://github.com/MarkusLeupold/bibtex-xml"
             targetNamespace="https://github.com/MarkusLeupold/bibtex-xml"
             elementFormDefault="qualified">
 
@@ -138,6 +139,22 @@
     </xsd:choice>
 </xsd:complexType>
 
-<xsd:element name="database" type="databaseType"/>
+<xsd:element name="database" type="databaseType">
+    <xsd:unique name="entryIdKey">
+        <xsd:annotation>
+            <xsd:documentation>
+                A typical problem with XPath is namespaces. In this case, XPath
+                could be initialized by the parser without a default namespace.
+                Then, the XPath processor wouldn't interpret unprefixed names
+                in the default namespace of this schema.
+                This schema declares an extra prefix for the default namespace
+                which can be used inside XPath expressions to select the
+                elements which are qualified with the default namespace.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:selector xpath="btxml:entry"/>
+        <xsd:field xpath="@id"/>
+    </xsd:unique>
+</xsd:element>
 
 </xsd:schema>
