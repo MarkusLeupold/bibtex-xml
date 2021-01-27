@@ -94,7 +94,7 @@
 <xsd:simpleType name="entryIdType">
     <xsd:restriction base="xsd:string">
         <xsd:pattern value="\p{IsBasicLatin}+"/>
-        <!-- <xsd:pattern value="[^ {},~#%\\]+"/> -->
+        <xsd:pattern value="[^ {},~#%\\]+"/>
     </xsd:restriction>
 </xsd:simpleType>
 
