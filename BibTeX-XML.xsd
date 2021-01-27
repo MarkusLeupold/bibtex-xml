@@ -1,0 +1,143 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns="https://github.com/MarkusLeupold/bibtex-xml"
+            targetNamespace="https://github.com/MarkusLeupold/bibtex-xml"
+            elementFormDefault="qualified">
+
+<xsd:annotation>
+    <xsd:documentation>
+        The schema for BibTeX-XML~~~the XML-based language for describing
+        BibTeX databases which is defined by the GitHub project
+        https://github.com/MarkusLeupold/bibtex-xml.
+
+        This schema is rather strict by exclusively allowing the original BibTeX
+        entry types and field names. Custom types or fields that are not part of
+        the BibTeX types and fields sets will not validate.
+
+        This strictness only concerns the identifiers themselves. The schema
+        does not restrict, which fields are allowed inside of an entry of a
+        particular type, nor specifies it any required or optional fields for
+        entries.
+        This is, because a BibTeX database is valid, even if the restrictions
+        of BibTeX in terms of required and optional fields are not matched. It
+        is the interpreter's task to deal with missing or too much information.
+
+        Author: Markus Leupold [markus.leupold@stud.htwk-leipzig.de]
+    </xsd:documentation>
+</xsd:annotation>
+
+<xsd:simpleType name="literalValueType">
+    <xsd:annotation>
+        <xsd:documentation>
+            Just a shallow copy of xsd:string, for now.
+        </xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string"/>
+</xsd:simpleType>
+
+<xsd:complexType name="referencedValueType">
+    <xsd:attribute name="name" type="stringNameType"/>
+</xsd:complexType>
+
+<xsd:simpleType name="stringNameType">
+    <xsd:annotation>
+        <xsd:documentation>
+            TODO: Find out the exact set of allowed string names and replace
+                  the current pattern accordingly. At the moment, the pattern
+                  is very likely to exclude a few names which are actually
+                  allowed.
+        </xsd:documentation>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:string">
+        <xsd:pattern value="[a-zA-Z_]+"/>
+    </xsd:restriction>
+</xsd:simpleType>
+
+<xsd:group name="valueGroup">
+    <xsd:choice>
+        <xsd:element name="literalValue" type="literalValueType"/>
+        <xsd:element name="referencedValue" type="referencedValueType"/>
+    </xsd:choice>
+</xsd:group>
+
+<xsd:simpleType name="fieldNameType">
+    <xsd:restriction base="xsd:string">
+        <xsd:enumeration value="address"/>
+        <xsd:enumeration value="author"/>
+        <xsd:enumeration value="booktitle"/>
+        <xsd:enumeration value="chapter"/>
+        <xsd:enumeration value="edition"/>
+        <xsd:enumeration value="editor"/>
+        <xsd:enumeration value="howpublished"/>
+        <xsd:enumeration value="institution"/>
+        <xsd:enumeration value="isbn"/>
+        <xsd:enumeration value="journal"/>
+        <xsd:enumeration value="month"/>
+        <xsd:enumeration value="note"/>
+        <xsd:enumeration value="number"/>
+        <xsd:enumeration value="organization"/>
+        <xsd:enumeration value="pages"/>
+        <xsd:enumeration value="publisher"/>
+        <xsd:enumeration value="school"/>
+        <xsd:enumeration value="series"/>
+        <xsd:enumeration value="title"/>
+        <xsd:enumeration value="type"/>
+        <xsd:enumeration value="volume"/>
+        <xsd:enumeration value="year"/>
+    </xsd:restriction>
+</xsd:simpleType>
+
+<xsd:complexType name="fieldType">
+    <xsd:group ref="valueGroup" minOccurs="1" maxOccurs="unbounded"/>
+    <xsd:attribute name="name" type="fieldNameType"/>
+</xsd:complexType>
+
+<xsd:simpleType name="entryIdType">
+    <xsd:restriction base="xsd:string">
+        <xsd:pattern value="\p{IsBasicLatin}+"/>
+        <!-- <xsd:pattern value="[^ {},~#%\\]+"/> -->
+    </xsd:restriction>
+</xsd:simpleType>
+
+<xsd:simpleType name="entryTypeType">
+    <xsd:restriction base="xsd:string">
+        <xsd:enumeration value="article"/>
+        <xsd:enumeration value="book"/>
+        <xsd:enumeration value="booklet"/>
+        <xsd:enumeration value="conference"/>
+        <xsd:enumeration value="inbook"/>
+        <xsd:enumeration value="incollection"/>
+        <xsd:enumeration value="inproceedings"/>
+        <xsd:enumeration value="manual"/>
+        <xsd:enumeration value="mastersthesis"/>
+        <xsd:enumeration value="misc"/>
+        <xsd:enumeration value="phdthesis"/>
+        <xsd:enumeration value="proceedings"/>
+        <xsd:enumeration value="techreport"/>
+        <xsd:enumeration value="unpublished"/>
+    </xsd:restriction>
+</xsd:simpleType>
+
+<xsd:complexType name="entryType">
+    <xsd:sequence>
+        <xsd:element name="field" type="fieldType" minOccurs="1"
+            maxOccurs="unbounded"/>
+    </xsd:sequence>
+    <xsd:attribute name="id" type="entryIdType"/>
+    <xsd:attribute name="type" type="entryTypeType"/>
+</xsd:complexType>
+
+<xsd:complexType name="stringType">
+    <xsd:group ref="valueGroup" minOccurs="1" maxOccurs="unbounded"/>
+    <xsd:attribute name="name" type="stringNameType"/>
+</xsd:complexType>
+
+<xsd:complexType name="databaseType">
+    <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element name="entry" type="entryType"/>
+        <xsd:element name="string" type="stringType"/>
+    </xsd:choice>
+</xsd:complexType>
+
+<xsd:element name="database" type="databaseType"/>
+
+</xsd:schema>

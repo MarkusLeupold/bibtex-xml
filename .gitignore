@@ -2,6 +2,7 @@
 
 !.gitignore
 !BibTeX-XML.dtd
+!BibTeX-XML.xsd
 !Makefile
 
 !bibtoxml
