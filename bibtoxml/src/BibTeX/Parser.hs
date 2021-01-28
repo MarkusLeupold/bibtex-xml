@@ -96,7 +96,7 @@ stringToFieldName s =
         "address"      -> Just Address
         "author"       -> Just Author
         "booktitle"    -> Just Booktitle
-        "chaper"       -> Just Chapter
+        "chapter"      -> Just Chapter
         "edition"      -> Just Edition
         "editor"       -> Just Editor
         "howpublished" -> Just Howpublished

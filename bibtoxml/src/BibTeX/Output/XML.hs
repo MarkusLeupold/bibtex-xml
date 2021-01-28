@@ -42,7 +42,7 @@ instance ToString BT.FieldName where
     toString BT.Address        = "address"
     toString BT.Author         = "author"
     toString BT.Booktitle      = "booktitle"
-    toString BT.Chapter        = "chaper"
+    toString BT.Chapter        = "chapter"
     toString BT.Edition        = "edition"
     toString BT.Editor         = "editor"
     toString BT.Howpublished   = "howpublished"
