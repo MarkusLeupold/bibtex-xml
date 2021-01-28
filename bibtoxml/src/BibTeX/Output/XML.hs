@@ -1,15 +1,21 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module BibTeX.Output.XML where
+module BibTeX.Output.XML ( Format(..)
+                         , toElement
+                         , toElementWithoutComments
+                         ) where
 
 import qualified BibTeX.Types as BT
 import qualified Text.XML.Light as XML
 import qualified Data.Map.Strict as Map
 
 
-data Format = Format { includeComments :: Bool } deriving Show
+data Format = Format { includeComments :: Bool
+                     , linkXMLSchema   :: Maybe String
+                     } deriving Show
 
 bibtex_xml_ns_uri = "https://github.com/MarkusLeupold/bibtex-xml"
+xml_schema_instance = "http://www.w3.org/2001/XMLSchema-instance"
 
 
 class ToString t where
@@ -139,25 +145,45 @@ instance ToElements BT.Element where
         else []
     toElements f (BT.StringDecl m) = toElements f $ Map.toAscList m
 
-instance ToElements [BT.Element] where
-    toElements f es = [ XML.node ( name_with_ns { XML.qName = "database" } )
-                                 ( [ XML.Attr
-                                         { XML.attrKey =
-                                               XML.blank_name
-                                                   { XML.qName = "xmlns" }
-                                         , XML.attrVal = bibtex_xml_ns_uri
-                                         }
-                                   ]
-                                 , es >>= (toElements f)
-                                 )
-                      ]
 
-toElement :: BT.Database -> XML.Element
-toElement db =
-    (\ (x:xs) -> x)
-    $ toElements (Format { includeComments = True }) db
+attr_xmlns =
+    XML.Attr
+        { XML.attrKey = XML.blank_name { XML.qName = "xmlns" }
+        , XML.attrVal = bibtex_xml_ns_uri
+        }
+
+attr_schema_instance =
+    XML.Attr
+        { XML.attrKey = XML.blank_name { XML.qName = "xmlns:xsi" }
+        , XML.attrVal = xml_schema_instance
+        }
+
+attr_schema_location l =
+    XML.Attr
+        { XML.attrKey = XML.blank_name { XML.qName = "xsi:schemaLocation" }
+        , XML.attrVal = bibtex_xml_ns_uri ++ " " ++ l
+        }
+
+instance ToElements [BT.Element] where
+    toElements f es =
+        [ XML.node ( name_with_ns { XML.qName = "database" } )
+                   ( attr_xmlns
+                     : ( maybe []
+                               ( \ l -> [ attr_schema_instance
+                                        , attr_schema_location l
+                                        ]
+                               )
+                               (linkXMLSchema f)
+                       )
+                   , es >>= (toElements f)
+                   )
+        ]
+
+toElement :: Format -> BT.Database -> XML.Element
+toElement f db = head $ toElements f db
 
 toElementWithoutComments :: BT.Database -> XML.Element
-toElementWithoutComments db =
-    (\ (x:xs) -> x)
-    $ toElements (Format { includeComments = False }) db
+toElementWithoutComments db = toElement Format { includeComments = False
+                                               , linkXMLSchema   = Nothing
+                                               }
+                                        db
