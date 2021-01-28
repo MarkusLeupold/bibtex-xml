@@ -2,6 +2,7 @@ ROOTDIR        := $(PWD)
 TASKDIR        := task
 BIBTEXDATABASE := $(TASKDIR)/Projekt_BIB_original.txt
 BIBTEXXMLDTD   := BibTeX-XML.dtd
+BIBTEXXMLXSD   := BibTeX-XML.xsd
 
 # The bibtoxml program
 BIBTOXMLROOTDIR := bibtoxml
@@ -29,6 +30,7 @@ submission: $(SUBMISSIONDIR) \
 	cp $(BIBTEXDATABASE) $(SUBMISSIONDIR)/
 	$(BIBTOXML) -o $(BIBTEXXMLDOCUMENT) $(BIBTEXDATABASE)
 	cp $(BIBTEXXMLDTD) $(SUBMISSIONDIR)/
+	cp $(BIBTEXXMLXSD) $(SUBMISSIONDIR)/
 
 
 # == Cleanup ===================================================================
