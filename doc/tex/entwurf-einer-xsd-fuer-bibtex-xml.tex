@@ -1,0 +1,22 @@
+\section[Entwurf einer XSD]{Entwurf einer XSD für \BibTeXXML}
+
+Eine XML-Schema-Definition (XSD) eignet sich hervorragend, um das
+\BibTeXXMLformat{} zu definieren. Es lässt sich sehr genau einschränken, welche
+Werte an verschiedenen Stellen im Dokument erlaubt sind (z.B. für die ID eines
+Eintrags oder den Namen eines Feldes). Auch kann im Gegensatz zur DTD definiert
+werden, dass Eintrags-IDs eindeutig sein müssen.
+
+Es wurde eine XSD im Venetian-Blind-Design nach der Beschreibung in
+\cite{oracle:xsd-design-patterns} entworfen. Sie befindet sich im Abgabeordner
+unter dem Dateinamen \file{BibTeX-XML.xsd}. Die Validierbarkeit des Dokuments
+mit dieser XSD wurde mit dem Programm \file{xmllint} durch folgenden Aufruf
+überprüft:
+\begin{lstlisting}[language=bash]
+$ xmllint --schema BibTeX-XML.xsd --noout Projekt_BIB_original.xml
+Projekt_BIB_original.xml validates
+\end{lstlisting}
+
+Eine Version der erzeugten Datenbank mit XML-Schema-Instanz-Deklaration findet
+sich in der Datei \file{Projekt\_BIB\_original\_xsd.xml}. Ob die
+Instanz-Deklaration korrekt funktioniert konnte nicht überprüft werden, da
+\file{xmllint} diese nicht automatisiert verarbeiten kann.

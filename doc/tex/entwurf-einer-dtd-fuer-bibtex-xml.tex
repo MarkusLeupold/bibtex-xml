@@ -1,0 +1,46 @@
+\section[Entwurf einer DTD]{Entwurf einer DTD für \BibTeXXML}
+
+Die entwickelte XML-Struktur lässt sich nur sehr ungenau mittels einer XML-Dokumenttypdefinition (DTD) beschreiben. Im Folgenden sind die größten Schwierigkeiten aufgeführt:
+
+\begin{description}
+    \item[XML-Namensräume:] Da XML-Namensräume nicht Teil der
+        XML-1.0-Spezifikation sind, gibt es in DTDs keine Unterstützung für
+        diese. Man muss sich also entscheiden, ob man den Dokumenttyp mit oder
+        ohne vollqualifizierte Namen (d.h. mit oder ohne Präfix) formuliert.
+        
+        Spezifiziert man ein Präfix, so muss dieses auch identisch im
+        Instanzdokument verwendet werden -- es besteht also keine Wahlfreiheit
+        bezüglich des Präfixes, wie sie eigentlich durch die Spezifikation
+        \cite{w3c:xml-namespaces} vorgesehen ist.
+        
+        Nutzt man hingegen kein Präfix in der DTD, so darf auch im
+        Instanzdokument kein Präfix verwendet werden.
+        
+        Die DTD für \BibTeXXML{} legt kein Präfix fest, aber spezifiziert auf den Datenbankelement ein
+        Attribut \lstinlineXML|xmlns| mit festem Wert, der der URL des
+        \mbox{\BibTeX-}XML-Namensraums entspricht. Dadurch wird ein Parser
+        dieses Element zusammen mit seinen Kindelementen immer im
+        Standardnamensraum \BibTeXXMLnamespace{} interpretieren.
+    \item[Eintrags-IDs:] In \BibTeX{} dürfen Eintrags-IDs Zeichen enthalten, die
+        in den DTD-Typen \lstinlineplain|ID| und \lstinlineplain|NMTOKEN| nicht
+        erlaubt sind (z.B. \lstinlineplain|/|). Daher bleibt als einziger
+        möglicher Typ für Eintrags-IDs der Typ \lstinlineplain|CDATA|, der zu
+        viele Zeichen zulässt (z.B. \lstinlineplain|&|, \lstinlineplain|\|).
+        Außerdem fällt dadurch die Einschränkung weg, dass die Eintrags-ID
+        innerhalb einer Datenbank eindeutig sein muss.
+\end{description}
+
+Die entworfene DTD findet sich unter dem Dateinamen \file{BibTeX-XML.dtd} im
+Abgabeordner. Die Datei \file{Projekt\_BIB\_original\_dtd.xml} enthält eine Version
+der erzeugten Datenbank in der diese DTD verlinkt ist.
+
+Die Validierbarkeit der Datenbank wurde mit dem Programm \file{xmllint} durch
+folgenden Aufruf überprüft, wobei eine leere Ausgabe die Validierbarkeit bestätigt hat:
+\begin{lstlisting}[language=bash]
+$ xmllint --valid --noblanks --noout Projekt_BIB_original_dtd.xml
+\end{lstlisting}
+Das Argument \lstinlinebash|--noblanks| veranlasst \file{xmllint} dazu, beim
+Einlesen der Datei allen vernachlässigbaren Leerraum zu entfernen. Ansonsten
+werden die Zeilenumbrüche, die sich zur besseren Lesbarkeit im Dokument
+befinden, als eigene Kindknoten interpretiert, die durch die DTD nicht erlaubt
+sind.

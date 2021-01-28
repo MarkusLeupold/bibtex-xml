@@ -25,11 +25,13 @@ GitHub-Repository dieses Projekts unter dem Namen \file{bibtoxml} (siehe
 
 Sowohl \BibTeXXML{} als auch \file{bibtoxml} weisen keine Einschränkungen auf,
 die für die Erfüllung der Aufgabenstellung von Bedeutung sind. Die vorgegebene
-Maximal-Datenbank \file{Projekt\_BIB\_original.txt} lässt sich \emph{fehlerfrei
-und ohne Ausschluss von Datensätzen} mit \file{bibtoxml} umwandeln und in
-\BibTeXXML{} darstellen. Daher wird für das Projekt diese Maximal-Datenbank
-verwendet -- im Folgenden bezeichnet als \enquote{die \BibTeXdatabase}.
-Diese ist im Abgabeordner unter dem genannten Dateinamen enthalten.
+Maximal-Datenbank \file{Projekt\_BIB\_original.txt} lässt sich mit
+\file{bibtoxml} so umwandeln, dass das Ergebnis keine Fehler enthält. Das
+Konvertierungsprogramm sortiert dabei automatisch Einträge aus, die Fehler im
+Sinne der Sprache einer \BibTeXdatabase{} enthalten. Da sie kein Problem für den
+Parser darstellt, wird für das Projekt die genannte Maximal-Datenbank verwendet
+-- im Folgenden bezeichnet als \enquote{die \BibTeXdatabase}. Diese ist im
+Abgabeordner unter dem genannten Dateinamen enthalten.
 
 \subsection{Umwandlung der Datenbank}
 
@@ -37,7 +39,18 @@ Diese ist im Abgabeordner unter dem genannten Dateinamen enthalten.
 Der folgende Befehl auf einer Linux-Kommandozeile erzeugt aus der  \BibTeXdatabase{} das \BibTeXXMLdoc{} \file{Projekt\_BIB\_original.xml}:
 \end{flushleft}
 \begin{lstlisting}[language=bash]
-$ bibtoxml -o Projekt_BIB_original.xml Projekt_BIB_original.txt
+$ bibtoxml -o Projekt_BIB_original.xml -l Projekt_BIB_original.log Projekt_BIB_original.txt
 \end{lstlisting}
-Das erzeugte Dokument befindet sich mit dem hier verwendeten Dateinamen im
-Abgabeordner.
+Außerdem werden die Log-Ausgaben in die Datei \file{Projekt\_BIB\_original.log}
+ausgegeben. Beide erzeugte Dateien befinden sich mit den hier verwendeten
+Dateinamen im Abgabeordner.
+
+\subsection{Ausgeschlossene Einträge}
+
+Grundsätzlich ist es vor der Verwendung von \file{bibtoxml} nicht nötig,
+Einträge aus einer umzuwandelnden Datenbank auszuschließen. Das Programm kann
+erfolgreich jede \BibTeXdatabase{} verarbeiten. Allerdings schließt
+\file{bibtoxml} -- wie bereits erwähnt -- selbständig fehlerhafte Daten aus. Der
+Datei \file{Projekt\_BIB\_original.log} lässt sich in diesem Fall entnehmen,
+dass aus der \BibTeXdatabase{} ein einzelner Eintrag aufgrund der doppelten
+Verwendung der ID \lstinlineplain|Skeide:04| entfernt wurde.
