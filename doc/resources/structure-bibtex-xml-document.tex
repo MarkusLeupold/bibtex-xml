@@ -70,8 +70,14 @@
             \node[operator] {$+$}
                 child
                   { node[operator] {$|$}
-                    child {node[xml element] {BibTeX:literalValue}}
-                    child {node[xml element] {BibTeX:referencedValue}}
+                    child
+                      { node[xml element] {BibTeX:literalValue}
+                        child {node {\ttfamily \#PCDATA}}
+                      }
+                    child
+                      { node[xml element] {BibTeX:referencedValue}
+                        child {node[xml attribute] {name}}
+                      }
                   }
               ;
         \end{scope}
