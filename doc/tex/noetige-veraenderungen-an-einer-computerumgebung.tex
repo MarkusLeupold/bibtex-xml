@@ -1,0 +1,30 @@
+\section[Nötige Veränderungen an einer Computerumgebung]{
+    Nötige Veränderung an einer Computerumgebung zum Testen des Arbeitsergebnisses
+}
+
+Grundsätzlich muss hier erwähnt werden, dass das Projekt auf einem Linux-System
+(Ubuntu) bearbeitet wurde. Die in dieser Dokumentation gezeigten
+Kommandozeilenaufrufe sind in \file{bash}-Syntax geschrieben und können daher
+nicht identisch auf einem Windows-System verwendet werden. Der Autor kann keine
+Angaben über spezifische Vorgehensweisen auf einem anderen Betriebssystem
+machen.
+
+Im Folgenden werden die nötigen Veränderungen genannt, die Linux-Systeme
+betreffen.
+\begin{description}
+    \item[Installation von \file{bibtoxml}:] Falls der Bedarf besteht, die
+        Konvertierung von \BibTeX{} zu \BibTeXXML{} zu testen, so kann dafür
+        das GitHub-Repository dieses Projekts (siehe \cite{github-bibtex-xml})
+        geklont werden, in dem der Quellcode des Konvertierungsprogramms
+        enthalten ist. Zum Kompilieren des Programms benötigt man den
+        Haskell-Compiler \file{GHC} und optional das Programm \file{make}.
+    \item[Installation von \file{xmllint}:] \file{xmllint} wurde in diesem
+        Projekt für die Validierung von XML-Dokumenten nach DTDs oder XSDs
+        verwendet. Das Programm ist für Linux verfügbar, soll aber laut
+        \cite{xmlsoft-org} auch auf anderen Betriebssystem (z.B. Windows)
+        kompilieren. Der Autor kann darüber keine genauen Angaben machen.
+    \item[Installation von \file{xsltproc}:] \file{xsltproc} wurde in diesem
+        Projekt verwendet, um ein XSLT-Stylesheet auf XML-Dateien anzuwenden.
+        Auch dieses Programm sollte laut \cite{xmlsoft-org} auch auf anderen
+        Betriebssystemen verwendbar sein.
+\end{description}
