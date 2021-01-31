@@ -19,6 +19,10 @@ xml_dtd :: String -> String -> String
 xml_dtd qname location =
     "<!DOCTYPE " ++ qname ++ " SYSTEM \"" ++ location ++ "\">\n"
 
+xml_stylesheet :: String -> String -> String
+xml_stylesheet t s =
+    "<?xml-stylesheet type=\"" ++ t ++ "\" href=\"" ++ s ++ "\"?>\n"
+
 -- | convert raw BibTeX database content to a pretty-printed BibTeX-XML document
 -- If the Bool is True, the result will contain the BibTeX comments as XML
 -- elements. If it is False, comments will be dropped.
@@ -35,6 +39,10 @@ convert args db =
     in  xml_header
         ++ "\n"
         ++ ( maybe ""
+                   (\ (t,f) -> (xml_stylesheet t f) ++ "\n")
+                   (stylesheet args)
+           )
+        ++ ( maybe ""
                    ( \ l -> (xml_dtd (XML.showQName $ XML.elName databaseXML) l)
                             ++ "\n"
                    )
@@ -50,6 +58,7 @@ data Args = Args { inputFile       :: Maybe String
                  , includeComments :: Bool
                  , logFile         :: Maybe String
                  , schemaLocation  :: Maybe String
+                 , stylesheet      :: Maybe (String, String)
                  } deriving Show
 
 default_args = Args { inputFile       = Nothing
@@ -58,18 +67,20 @@ default_args = Args { inputFile       = Nothing
                     , includeComments = False
                     , logFile         = Nothing
                     , schemaLocation  = Nothing
+                    , stylesheet      = Nothing
                     }
 
 parseArgs :: [String] -> IO Args
 parseArgs = _parseArgs default_args
 
 _parseArgs :: Args -> [String] -> IO Args
-_parseArgs a ("-o":f:r)       = _parseArgs (a { outputFile      = Just f }) r
-_parseArgs a ("-c":r)         = _parseArgs (a { includeComments = True   }) r
-_parseArgs a ("--dtd":f:r)    = _parseArgs (a { dtdLocation     = Just f }) r
-_parseArgs a ("-l":f:r)       = _parseArgs (a { logFile         = Just f }) r
-_parseArgs _ ("-h":_)         = usage
-_parseArgs a ("--schema":f:r) = _parseArgs (a { schemaLocation  = Just f }) r
+_parseArgs a ("-o":f:r)        = _parseArgs (a { outputFile      = Just f }) r
+_parseArgs a ("-c":r)          = _parseArgs (a { includeComments = True   }) r
+_parseArgs a ("--dtd":f:r)     = _parseArgs (a { dtdLocation     = Just f }) r
+_parseArgs a ("-l":f:r)        = _parseArgs (a { logFile         = Just f }) r
+_parseArgs _ ("-h":_)          = usage
+_parseArgs a ("--schema":f:r)  = _parseArgs (a { schemaLocation  = Just f }) r
+_parseArgs a ("--style":t:f:r) = _parseArgs (a { stylesheet  = Just (t,f) }) r
 -- If an argument does not match one of the flagged arg's patterns but begins
 -- with a minus sign (i.e. '-') it can not have been used in the right way. So,
 -- we execute usage.
@@ -110,6 +121,9 @@ usage = do
                ++ " -o <file>       Output the results into <file>\n"
                ++ " --schema <uri>  Include a reference to an XML Schema at\n"
                ++ "                 <uri>\n"
+               ++ " --style <type> <file>\n"
+               ++ "                 Include a processing instruction for the\n"
+               ++ "                 stylesheet <file> of MIME type <type>\n"
                ++ "\n"
                ++ "If one of these args is specified more than once, only the\n"
                ++ "last one will be used. Also, currently only one input file\n"
