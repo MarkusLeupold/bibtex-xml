@@ -1,0 +1,60 @@
+\section{Abschließende Bemerkungen des Autors}
+
+\subsection{Unterschätzung des Entwicklungsaufwandes von \file{bibtoxml}}
+
+Im Laufe der Bearbeitung des Projekts wurde immer deutlicher, dass die
+Entwicklung eines eigenen \mbox{\BibTeX-}Parsers ein sehr umfangreiches Vorhaben
+ist. Es hat mich sehr viel Zeit gekostet, \file{bibtoxml} an einen Punkt zu
+bringen, an dem es fehlerfrei die vorgegebene Datenbank umwandeln kann. Dadurch
+waren meine zeitlichen Ressourcen nur sehr knapp, um die eigentliche Aufgabe zu
+lösen. Eine vorausschauendere Zeitplanung wäre angebracht gewesen.
+
+\subsection{Auswirkungen von Designentscheidungen}
+
+Ich habe für die einzelnen Teile des Projektes sehr viele Designentscheidungen
+getroffen. Die drei gravierendsten sind:
+\begin{itemize}
+    \item das Übernehmen der String-Definitionen und -Referenzen aus der
+        \BibTeXdatabase{}
+    \item die ausgelassene Interpretation der \mbox{\TeX-}Kontrollsequenzen.
+    \item die Unterstützung beliebiger \BibTeXdatabase en mit unbegrenztem
+        Komplexitätsgrad, statt einer für die vorgegebene Datenbank
+        maßgeschneiderten Lösung
+\end{itemize}
+Alle drei Entscheidungen lassen sich damit begründen, dass ich eine möglichst
+große Äquivalenz in der Aussagekraft und den Features von \BibTeX{} und
+\BibTeXXML{} erzielen wollte. Zwar habe ich diese Äquivalenz weitestgehend
+erreicht, aber dadurch ist es nun schwieriger, eine \BibTeXXMLdatabase{} zu
+interpretieren und anzuzeigen.
+
+So müssen Werte erst expandiert werden, bevor sie verwendbar sind, was auch das
+Sortieren von Datensätzen erschwert: In der aktuellen Implementation werden
+Einträge durch XSLT nach ihrer ID sortiert, weil es ohne erheblichen Mehraufwand
+nicht möglich wäre, sie korrekt nach ihrem Autor oder Titel zu sortieren.
+
+Außerdem sind jegliche syntaktischen Elemente von \TeX{} in dem erzeugten
+HTML-Dokument noch nicht in normalen Text umgewandelt. Mein Plan war es, dies
+der interpretierenden Anwendung zu überlassen -- so wie auch bei \BibTeX{} die
+\mbox{\TeX-}Makros erst von der Anwendung, \TeX, interpretiert werden (d.h. die
+\mbox{\TeX-}Syntax soll erst durch das XSL-Stylesheet oder das HTML-Dokument
+unter Zuhilfenahme von JavaScript verarbeitet werden). Die Implementation eines
+solchen Features ist am Ende an der nicht verfügbaren Zeit gescheitert.
+
+\subsection{Erweiterungsmöglichkeiten}
+
+\begin{itemize}
+    \item Interpretation der \mbox{\TeX-}Syntax für die Darstellung im
+        HTML-Dokument
+    \item Erweiterung des CSS-Stylesheets für das HTML-Resultat zur Verbesserung
+        der User-Experience, z.B.:
+        \begin{itemize}
+            \item Registerkarten für die verschiedenen Hauptabschnitte um
+                spätere Abschnitte leichter zugänglich zu machen
+            \item Makrotypographie für bessere Lesbarkeit
+        \end{itemize}
+    \item Einbau von Statistiken in das HTML-Resultat, z.B. ein Kreisdiagramm
+        über die relativen Häufigkeiten aller Quelltypen in einer Datenbank.
+    \item Sortierfunktion für die Quellenlisten (bisher nur statisch nach ID
+        sortiert)
+    \item Such- und Filterfunktionen
+\end{itemize}
