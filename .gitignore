@@ -1,6 +1,7 @@
 *
 
 !.gitignore
+!README.md
 !BibTeX-XML.dtd
 !BibTeX-XML.xsd
 !BibTeX-XML-to-html.xsl
